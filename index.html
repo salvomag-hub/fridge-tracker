@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🧊 FridgeTracker</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2196F3">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="stylesheet" href="style.css">
+    <!-- Tesseract.js for OCR -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <!-- html5-qrcode for barcode scanning -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <h1>🧊 FridgeTracker</h1>
+            <div class="house-selector">
+                <button id="btn-casa-salvo" class="house-btn active" onclick="selectHouse('salvo')">🏠 Casa Salvo</button>
+                <button id="btn-casa-elisa" class="house-btn" onclick="selectHouse('elisa')">🏡 Casa Elisa</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Quick Stats -->
+            <div class="stats-bar">
+                <div class="stat">
+                    <span class="stat-number" id="total-items">0</span>
+                    <span class="stat-label">Prodotti</span>
+                </div>
+                <div class="stat expiring">
+                    <span class="stat-number" id="expiring-soon">0</span>
+                    <span class="stat-label">In scadenza</span>
+                </div>
+                <div class="stat expired">
+                    <span class="stat-number" id="expired-items">0</span>
+                    <span class="stat-label">Scaduti</span>
+                </div>
+            </div>
+
+            <!-- Add Item Section -->
+            <div class="add-section">
+                <h2>➕ Aggiungi Prodotto</h2>
+                
+                <!-- Scan Buttons -->
+                <div class="scan-buttons">
+                    <button class="scan-btn barcode" onclick="startBarcodeScanner()">
+                        <span class="icon">📷</span>
+                        <span>Scansiona Barcode</span>
+                    </button>
+                    <button class="scan-btn ocr" onclick="startOCRScanner()">
+                        <span class="icon">📅</span>
+                        <span>Foto Scadenza</span>
+                    </button>
+                </div>
+
+                <!-- Scanner Container (hidden by default) -->
+                <div id="scanner-container" class="scanner-container hidden">
+                    <div id="scanner-view"></div>
+                    <button class="close-scanner" onclick="closeScanner()">✕ Chiudi</button>
+                </div>
+
+                <!-- OCR Container -->
+                <div id="ocr-container" class="ocr-container hidden">
+                    <input type="file" id="ocr-input" accept="image/*" capture="environment" onchange="processOCR(event)">
+                    <div id="ocr-preview"></div>
+                    <div id="ocr-status"></div>
+                    <button class="close-scanner" onclick="closeOCR()">✕ Chiudi</button>
+                </div>
+
+                <!-- Manual Entry Form -->
+                <form id="add-form" class="add-form" onsubmit="addItem(event)">
+                    <div class="form-group">
+                        <label for="product-name">Nome Prodotto</label>
+                        <input type="text" id="product-name" placeholder="es. Latte, Yogurt..." required>
+                    </div>
+                    <div class="form-group">
+                        <label for="expiry-date">Data Scadenza</label>
+                        <input type="date" id="expiry-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="quantity">Quantità</label>
+                        <input type="number" id="quantity" value="1" min="1">
+                    </div>
+                    <button type="submit" class="submit-btn">✅ Aggiungi</button>
+                </form>
+
+                <!-- Quick Add Buttons -->
+                <div class="quick-add">
+                    <h3>⚡ Aggiungi Veloce</h3>
+                    <div class="quick-buttons">
+                        <button onclick="quickAdd('Latte', 7)">🥛 Latte (+7gg)</button>
+                        <button onclick="quickAdd('Yogurt', 21)">🥄 Yogurt (+21gg)</button>
+                        <button onclick="quickAdd('Uova', 28)">🥚 Uova (+28gg)</button>
+                        <button onclick="quickAdd('Mozzarella', 7)">🧀 Mozzarella (+7gg)</button>
+                        <button onclick="quickAdd('Prosciutto', 5)">🥓 Prosciutto (+5gg)</button>
+                        <button onclick="quickAdd('Pollo', 3)">🍗 Pollo (+3gg)</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Items List -->
+            <div class="items-section">
+                <h2>📦 Nel Frigo</h2>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" onclick="filterItems('all')">Tutti</button>
+                    <button class="filter-btn" onclick="filterItems('expiring')">⚠️ In Scadenza</button>
+                    <button class="filter-btn" onclick="filterItems('expired')">❌ Scaduti</button>
+                </div>
+                <div id="items-list" class="items-list">
+                    <!-- Items will be populated here -->
+                </div>
+            </div>
+        </main>
+
+        <!-- Sync Status -->
+        <div class="sync-status" id="sync-status">
+            <span class="sync-icon">☁️</span>
+            <span class="sync-text">Sincronizzato</span>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
