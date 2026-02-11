@@ -627,6 +627,16 @@ body {
     align-items: center;
     gap: 6px;
     font-size: 12px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.sync-status:hover {
+    transform: translateX(-50%) scale(1.05);
+}
+
+.sync-status:active {
+    transform: translateX(-50%) scale(0.95);
 }
 
 .sync-status.syncing {

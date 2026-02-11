@@ -1,7 +1,11 @@
 {
-  "lastUpdated": null,
-  "houses": {
-    "salvo": [],
-    "elisa": []
+  "lastUpdated": "2026-02-11T22:53:00Z",
+  "salvo": {
+    "fridge": [],
+    "pantry": []
+  },
+  "elisa": {
+    "fridge": [],
+    "pantry": []
   }
 }

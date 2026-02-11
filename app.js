@@ -1,8 +1,9 @@
-// FridgeTracker - Main App Logic v2 (English)
+// FridgeTracker - Main App Logic v3 (Cloud Sync)
 
 // Configuration
 const CONFIG = {
     STORAGE_KEY: 'fridgetracker_data_v2',
+    CLOUD_URL: 'https://jsonblob.com/api/jsonBlob/019c4eeb-fc44-7bb8-886e-9deab33dfff9',
     OPEN_FOOD_FACTS_API: 'https://world.openfoodfacts.org/api/v0/product/'
 };
 
@@ -36,6 +37,7 @@ let currentStorage = 'fridge';
 let currentFilter = 'all';
 let selectedItems = new Set();
 let html5QrcodeScanner = null;
+let isSyncing = false;
 
 let data = {
     salvo: { fridge: [], pantry: [] },
@@ -43,8 +45,10 @@ let data = {
 };
 
 // Initialize app
-document.addEventListener('DOMContentLoaded', () => {
-    loadData();
+document.addEventListener('DOMContentLoaded', async () => {
+    // First try to load from cloud
+    await loadFromCloud();
+    
     renderQuickAddButtons();
     renderItems();
     updateStats();
@@ -54,47 +58,98 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('expiry-date').value = today;
 });
 
-// Data Management
-function loadData() {
+// Cloud Data Management
+async function loadFromCloud() {
+    updateSyncStatus('syncing');
+    try {
+        const response = await fetch(CONFIG.CLOUD_URL, {
+            headers: { 'Accept': 'application/json' }
+        });
+        
+        if (response.ok) {
+            const cloudData = await response.json();
+            if (cloudData.salvo && cloudData.elisa) {
+                data = {
+                    salvo: cloudData.salvo,
+                    elisa: cloudData.elisa
+                };
+                // Also save to localStorage as backup
+                localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(data));
+                updateSyncStatus('synced');
+                console.log('Loaded from cloud:', data);
+                return true;
+            }
+        }
+    } catch (e) {
+        console.error('Cloud load error:', e);
+    }
+    
+    // Fallback to localStorage
+    loadFromLocal();
+    updateSyncStatus('error');
+    return false;
+}
+
+function loadFromLocal() {
     const saved = localStorage.getItem(CONFIG.STORAGE_KEY);
     if (saved) {
         try {
             const parsed = JSON.parse(saved);
-            // Migrate from old format if needed
             if (Array.isArray(parsed.salvo)) {
                 data = {
                     salvo: { fridge: parsed.salvo, pantry: [] },
                     elisa: { fridge: parsed.elisa, pantry: [] }
                 };
-            } else {
+            } else if (parsed.salvo && parsed.elisa) {
                 data = parsed;
             }
         } catch (e) {
-            console.error('Error loading data:', e);
+            console.error('Error loading local data:', e);
         }
     }
 }
 
-function saveData() {
-    localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(data));
+async function saveToCloud() {
+    if (isSyncing) return;
+    isSyncing = true;
     updateSyncStatus('syncing');
     
-    setTimeout(() => {
-        updateSyncStatus('synced');
-        saveToCloud();
-    }, 500);
+    try {
+        const payload = {
+            lastUpdated: new Date().toISOString(),
+            salvo: data.salvo,
+            elisa: data.elisa
+        };
+        
+        const response = await fetch(CONFIG.CLOUD_URL, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        if (response.ok) {
+            updateSyncStatus('synced');
+            console.log('Saved to cloud');
+        } else {
+            throw new Error('Cloud save failed');
+        }
+    } catch (e) {
+        console.error('Cloud save error:', e);
+        updateSyncStatus('error');
+    }
+    
+    isSyncing = false;
 }
 
-async function saveToCloud() {
-    try {
-        const syncData = {
-            lastUpdated: new Date().toISOString(),
-            data: data
-        };
-        console.log('Data saved:', syncData);
-    } catch (e) {
-        console.log('Cloud sync not available');
-    }
+function saveData() {
+    // Save locally first (instant)
+    localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(data));
+    
+    // Then sync to cloud (async)
+    saveToCloud();
 }
 
 function updateSyncStatus(status) {
@@ -102,11 +157,24 @@ function updateSyncStatus(status) {
     el.className = 'sync-status ' + status;
     
     if (status === 'syncing') {
-        el.innerHTML = '<span class="sync-icon">🔄</span><span class="sync-text">Saving...</span>';
+        el.innerHTML = '<span class="sync-icon">🔄</span><span class="sync-text">Syncing...</span>';
     } else if (status === 'synced') {
-        el.innerHTML = '<span class="sync-icon">☁️</span><span class="sync-text">Saved</span>';
+        el.innerHTML = '<span class="sync-icon">☁️</span><span class="sync-text">Synced</span>';
     } else if (status === 'error') {
-        el.innerHTML = '<span class="sync-icon">⚠️</span><span class="sync-text">Error</span>';
+        el.innerHTML = '<span class="sync-icon">⚠️</span><span class="sync-text">Offline</span>';
+    }
+}
+
+// Manual sync button (pull to refresh alternative)
+async function manualSync() {
+    showToast('🔄 Syncing...', 'info');
+    const success = await loadFromCloud();
+    if (success) {
+        renderItems();
+        updateStats();
+        showToast('✅ Synced!', 'success');
+    } else {
+        showToast('⚠️ Sync failed', 'error');
     }
 }
 
@@ -131,14 +199,12 @@ function selectStorage(storage) {
     document.querySelectorAll('.storage-tab').forEach(tab => tab.classList.remove('active'));
     document.getElementById(`tab-${storage}`).classList.add('active');
     
-    // Update body class for color theming
     if (storage === 'pantry') {
         document.body.classList.add('pantry-mode');
     } else {
         document.body.classList.remove('pantry-mode');
     }
     
-    // Update title
     const title = document.getElementById('items-title');
     title.textContent = storage === 'fridge' ? '📦 In the Fridge' : '📦 In the Pantry';
     
@@ -344,14 +410,11 @@ function copyExport() {
         navigator.clipboard.writeText(text).then(() => {
             showToast('📋 Copied!', 'success');
             closeExportModal();
-            
-            // Clear selection after export
             selectedItems.clear();
             renderItems();
             updateExportButton();
         });
     } else {
-        // Fallback
         document.getElementById('export-text').select();
         document.execCommand('copy');
         showToast('📋 Copied!', 'success');
@@ -363,10 +426,8 @@ function renderItems() {
     const container = document.getElementById('items-list');
     let items = [...data[currentHouse][currentStorage]];
     
-    // Sort by expiry date
     items.sort((a, b) => new Date(a.expiry) - new Date(b.expiry));
     
-    // Apply filter
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
@@ -586,17 +647,11 @@ async function processOCR(event) {
 
 function extractDate(text) {
     const patterns = [
-        // DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
         /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](20\d{2})/,
-        // DD/MM/YY
         /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2})/,
-        // MM/DD/YYYY (US format)
         /(0?[1-9]|1[0-2])[\/\-\.](\d{1,2})[\/\-\.](20\d{2})/,
-        // "exp" or "best before" followed by date
         /(?:exp|best\s*before|use\s*by)[:\s]*(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/i,
-        // Month names in English
         /(\d{1,2})\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*(20\d{2}|\d{2})/i,
-        // Month names in Italian
         /(\d{1,2})\s*(gen|feb|mar|apr|mag|giu|lug|ago|set|ott|nov|dic)[a-z]*\s*(20\d{2}|\d{2})/i
     ];
     
@@ -692,6 +747,7 @@ function getExpiringItems(daysAhead = 2) {
 window.FridgeTracker = {
     getData: () => data,
     getExpiringItems,
+    manualSync,
     addItem: (house, storage, name, expiry, quantity = 1) => {
         const item = {
             id: Date.now(),
