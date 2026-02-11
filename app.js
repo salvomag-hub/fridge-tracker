@@ -1,4 +1,4 @@
-// FridgeTracker - Main App Logic v2
+// FridgeTracker - Main App Logic v2 (English)
 
 // Configuration
 const CONFIG = {
@@ -9,23 +9,23 @@ const CONFIG = {
 // Quick add presets
 const QUICK_ADD_PRESETS = {
     fridge: [
-        { name: 'Latte', emoji: '🥛', days: 7 },
+        { name: 'Milk', emoji: '🥛', days: 7 },
         { name: 'Yogurt', emoji: '🥄', days: 21 },
-        { name: 'Uova', emoji: '🥚', days: 28 },
+        { name: 'Eggs', emoji: '🥚', days: 28 },
         { name: 'Mozzarella', emoji: '🧀', days: 7 },
-        { name: 'Prosciutto', emoji: '🥓', days: 5 },
-        { name: 'Pollo', emoji: '🍗', days: 3 },
-        { name: 'Formaggio', emoji: '🧀', days: 14 },
-        { name: 'Burro', emoji: '🧈', days: 30 }
+        { name: 'Ham', emoji: '🥓', days: 5 },
+        { name: 'Chicken', emoji: '🍗', days: 3 },
+        { name: 'Cheese', emoji: '🧀', days: 14 },
+        { name: 'Butter', emoji: '🧈', days: 30 }
     ],
     pantry: [
         { name: 'Pasta', emoji: '🍝', days: 365 },
-        { name: 'Riso', emoji: '🍚', days: 365 },
-        { name: 'Tonno', emoji: '🐟', days: 730 },
-        { name: 'Passata', emoji: '🍅', days: 365 },
-        { name: 'Olio', emoji: '🫒', days: 545 },
-        { name: 'Biscotti', emoji: '🍪', days: 180 },
-        { name: 'Cereali', emoji: '🥣', days: 180 },
+        { name: 'Rice', emoji: '🍚', days: 365 },
+        { name: 'Tuna', emoji: '🐟', days: 730 },
+        { name: 'Tomato Sauce', emoji: '🍅', days: 365 },
+        { name: 'Olive Oil', emoji: '🫒', days: 545 },
+        { name: 'Cookies', emoji: '🍪', days: 180 },
+        { name: 'Cereal', emoji: '🥣', days: 180 },
         { name: 'Crackers', emoji: '🥨', days: 180 }
     ]
 };
@@ -102,11 +102,11 @@ function updateSyncStatus(status) {
     el.className = 'sync-status ' + status;
     
     if (status === 'syncing') {
-        el.innerHTML = '<span class="sync-icon">🔄</span><span class="sync-text">Salvataggio...</span>';
+        el.innerHTML = '<span class="sync-icon">🔄</span><span class="sync-text">Saving...</span>';
     } else if (status === 'synced') {
-        el.innerHTML = '<span class="sync-icon">☁️</span><span class="sync-text">Salvato</span>';
+        el.innerHTML = '<span class="sync-icon">☁️</span><span class="sync-text">Saved</span>';
     } else if (status === 'error') {
-        el.innerHTML = '<span class="sync-icon">⚠️</span><span class="sync-text">Errore</span>';
+        el.innerHTML = '<span class="sync-icon">⚠️</span><span class="sync-text">Error</span>';
     }
 }
 
@@ -140,7 +140,7 @@ function selectStorage(storage) {
     
     // Update title
     const title = document.getElementById('items-title');
-    title.textContent = storage === 'fridge' ? '📦 Nel Frigo' : '📦 In Credenza';
+    title.textContent = storage === 'fridge' ? '📦 In the Fridge' : '📦 In the Pantry';
     
     renderQuickAddButtons();
     renderItems();
@@ -155,7 +155,7 @@ function renderQuickAddButtons() {
     
     container.innerHTML = presets.map(p => `
         <button onclick="openQuickAddModal('${p.name}', ${p.days})">
-            ${p.emoji} ${p.name} <span class="days">(+${p.days}gg)</span>
+            ${p.emoji} ${p.name} <span class="days">(+${p.days}d)</span>
         </button>
     `).join('');
 }
@@ -194,7 +194,7 @@ function confirmQuickAdd(event) {
     updateStats();
     
     closeQuickEditModal();
-    showToast(`✅ ${name} aggiunto!`, 'success');
+    showToast(`✅ ${name} added!`, 'success');
 }
 
 // Add Item
@@ -206,7 +206,7 @@ function addItem(event) {
     const quantity = parseInt(document.getElementById('quantity').value) || 1;
     
     if (!name || !expiry) {
-        showToast('Compila tutti i campi!', 'error');
+        showToast('Please fill all fields!', 'error');
         return;
     }
     
@@ -226,7 +226,7 @@ function addItem(event) {
     document.getElementById('product-name').value = '';
     document.getElementById('quantity').value = '1';
     
-    showToast(`✅ ${name} aggiunto!`, 'success');
+    showToast(`✅ ${name} added!`, 'success');
 }
 
 // Edit Item
@@ -260,7 +260,7 @@ function saveEdit(event) {
         saveData();
         renderItems();
         updateStats();
-        showToast('✅ Modificato!', 'success');
+        showToast('✅ Updated!', 'success');
     }
     
     closeEditModal();
@@ -277,7 +277,7 @@ function deleteItem(id, event) {
     renderItems();
     updateStats();
     updateExportButton();
-    showToast('🗑️ Rimosso', 'success');
+    showToast('🗑️ Removed', 'success');
 }
 
 // Selection for Export
@@ -311,23 +311,23 @@ function exportSelected() {
     const items = data[currentHouse][currentStorage].filter(i => selectedItems.has(i.id));
     
     if (items.length === 0) {
-        showToast('Seleziona almeno un prodotto', 'error');
+        showToast('Select at least one item', 'error');
         return;
     }
     
-    const storageName = currentStorage === 'fridge' ? 'frigo' : 'credenza';
-    const houseName = currentHouse === 'salvo' ? 'Casa Salvo' : 'Casa Elisa';
+    const storageName = currentStorage === 'fridge' ? 'fridge' : 'pantry';
+    const houseName = currentHouse === 'salvo' ? "Salvo's" : "Elisa's";
     
-    let text = `🍳 Ho questi ingredienti (${houseName} - ${storageName}):\n\n`;
+    let text = `🍳 I have these ingredients (${houseName} ${storageName}):\n\n`;
     items.forEach(item => {
         const daysLeft = getDaysLeft(item.expiry);
         let status = '';
-        if (daysLeft < 0) status = ' ⚠️ SCADUTO';
-        else if (daysLeft <= 2) status = ' ⚠️ scade presto';
+        if (daysLeft < 0) status = ' ⚠️ EXPIRED';
+        else if (daysLeft <= 2) status = ' ⚠️ expiring soon';
         
         text += `• ${item.name} (x${item.quantity})${status}\n`;
     });
-    text += `\nCosa posso cucinare?`;
+    text += `\nWhat can I cook?`;
     
     document.getElementById('export-text').value = text;
     document.getElementById('export-modal').classList.remove('hidden');
@@ -342,7 +342,7 @@ function copyExport() {
     
     if (navigator.clipboard) {
         navigator.clipboard.writeText(text).then(() => {
-            showToast('📋 Copiato!', 'success');
+            showToast('📋 Copied!', 'success');
             closeExportModal();
             
             // Clear selection after export
@@ -354,7 +354,7 @@ function copyExport() {
         // Fallback
         document.getElementById('export-text').select();
         document.execCommand('copy');
-        showToast('📋 Copiato!', 'success');
+        showToast('📋 Copied!', 'success');
     }
 }
 
@@ -384,8 +384,8 @@ function renderItems() {
     if (items.length === 0) {
         const emptyIcon = currentStorage === 'fridge' ? '🧊' : '🗄️';
         const emptyText = currentFilter === 'all' 
-            ? `Nessun prodotto ${currentStorage === 'fridge' ? 'nel frigo' : 'in credenza'}` 
-            : 'Nessun prodotto in questa categoria';
+            ? `No items in the ${currentStorage}` 
+            : 'No items in this category';
         container.innerHTML = `
             <div class="empty-state">
                 <div class="icon">${emptyIcon}</div>
@@ -403,15 +403,15 @@ function renderItems() {
         
         if (daysLeft < 0) {
             statusClass = 'expired';
-            expiryText = `Scaduto da ${Math.abs(daysLeft)} giorn${Math.abs(daysLeft) === 1 ? 'o' : 'i'}`;
+            expiryText = `Expired ${Math.abs(daysLeft)} day${Math.abs(daysLeft) === 1 ? '' : 's'} ago`;
         } else if (daysLeft === 0) {
             statusClass = 'expiring';
-            expiryText = 'Scade OGGI!';
+            expiryText = 'Expires TODAY!';
         } else if (daysLeft <= 2) {
             statusClass = 'expiring';
-            expiryText = `Scade tra ${daysLeft} giorn${daysLeft === 1 ? 'o' : 'i'}`;
+            expiryText = `Expires in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`;
         } else {
-            expiryText = `Scade il ${formatDate(item.expiry)}`;
+            expiryText = `Expires ${formatDate(item.expiry)}`;
         }
         
         const isSelected = selectedItems.has(item.id);
@@ -491,14 +491,14 @@ function startBarcodeScanner() {
         (errorMessage) => {}
     ).catch(err => {
         console.error("Scanner error:", err);
-        showToast('Errore accesso fotocamera', 'error');
+        showToast('Camera access error', 'error');
         closeScanner();
     });
 }
 
 async function onBarcodeScanned(barcode) {
     closeScanner();
-    showToast('🔍 Cerco prodotto...', 'success');
+    showToast('🔍 Looking up product...', 'success');
     
     try {
         const response = await fetch(`${CONFIG.OPEN_FOOD_FACTS_API}${barcode}.json`);
@@ -506,18 +506,18 @@ async function onBarcodeScanned(barcode) {
         
         if (result.status === 1 && result.product) {
             const product = result.product;
-            const name = product.product_name_it || product.product_name || 'Prodotto sconosciuto';
+            const name = product.product_name || product.product_name_en || 'Unknown product';
             
             document.getElementById('product-name').value = name;
-            showToast(`✅ Trovato: ${name}`, 'success');
+            showToast(`✅ Found: ${name}`, 'success');
             document.getElementById('expiry-date').focus();
         } else {
-            showToast('Prodotto non trovato', 'error');
+            showToast('Product not found', 'error');
             document.getElementById('product-name').focus();
         }
     } catch (e) {
         console.error('Error looking up barcode:', e);
-        showToast('Errore ricerca', 'error');
+        showToast('Lookup error', 'error');
     }
 }
 
@@ -551,14 +551,14 @@ async function processOCR(event) {
     };
     reader.readAsDataURL(file);
     
-    status.textContent = '🔍 Analizzo immagine...';
+    status.textContent = '🔍 Analyzing image...';
     status.classList.add('visible');
     
     try {
-        const result = await Tesseract.recognize(file, 'ita+eng', {
+        const result = await Tesseract.recognize(file, 'eng+ita', {
             logger: m => {
                 if (m.status === 'recognizing text') {
-                    status.textContent = `🔍 Analisi: ${Math.round(m.progress * 100)}%`;
+                    status.textContent = `🔍 Analyzing: ${Math.round(m.progress * 100)}%`;
                 }
             }
         });
@@ -568,27 +568,35 @@ async function processOCR(event) {
         
         if (dateMatch) {
             document.getElementById('expiry-date').value = dateMatch;
-            status.textContent = `✅ Trovata data: ${formatDate(dateMatch)}`;
-            showToast('Data rilevata!', 'success');
+            status.textContent = `✅ Found date: ${formatDate(dateMatch)}`;
+            showToast('Date detected!', 'success');
         } else {
-            status.textContent = '⚠️ Nessuna data trovata';
-            showToast('Data non trovata', 'error');
+            status.textContent = '⚠️ No date found';
+            showToast('Date not found', 'error');
         }
         
         setTimeout(closeOCR, 2000);
         
     } catch (e) {
         console.error('OCR error:', e);
-        status.textContent = '❌ Errore analisi';
-        showToast('Errore OCR', 'error');
+        status.textContent = '❌ Analysis error';
+        showToast('OCR error', 'error');
     }
 }
 
 function extractDate(text) {
     const patterns = [
+        // DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
         /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](20\d{2})/,
+        // DD/MM/YY
         /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2})/,
-        /scad[a-z]*[:\s]*(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/i,
+        // MM/DD/YYYY (US format)
+        /(0?[1-9]|1[0-2])[\/\-\.](\d{1,2})[\/\-\.](20\d{2})/,
+        // "exp" or "best before" followed by date
+        /(?:exp|best\s*before|use\s*by)[:\s]*(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/i,
+        // Month names in English
+        /(\d{1,2})\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*(20\d{2}|\d{2})/i,
+        // Month names in Italian
         /(\d{1,2})\s*(gen|feb|mar|apr|mag|giu|lug|ago|set|ott|nov|dic)[a-z]*\s*(20\d{2}|\d{2})/i
     ];
     
@@ -618,8 +626,9 @@ function extractDate(text) {
 
 function getMonthNumber(monthName) {
     const months = {
-        'gen': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'mag': 5, 'giu': 6,
-        'lug': 7, 'ago': 8, 'set': 9, 'ott': 10, 'nov': 11, 'dic': 12
+        'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
+        'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12,
+        'gen': 1, 'mag': 5, 'giu': 6, 'lug': 7, 'ago': 8, 'set': 9, 'ott': 10, 'dic': 12
     };
     return months[monthName.toLowerCase().substring(0, 3)] || 1;
 }
@@ -635,7 +644,7 @@ function closeOCR() {
 // Utility Functions
 function formatDate(dateStr) {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' });
+    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function escapeHtml(text) {

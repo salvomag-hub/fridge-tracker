@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -19,15 +19,15 @@
         <header class="app-header">
             <h1>🧊 FridgeTracker</h1>
             <div class="house-selector">
-                <button id="btn-casa-salvo" class="house-btn active" onclick="selectHouse('salvo')">🏠 Salvo</button>
-                <button id="btn-casa-elisa" class="house-btn" onclick="selectHouse('elisa')">🏡 Elisa</button>
+                <button id="btn-casa-salvo" class="house-btn active" onclick="selectHouse('salvo')">🏠 Salvo's</button>
+                <button id="btn-casa-elisa" class="house-btn" onclick="selectHouse('elisa')">🏡 Elisa's</button>
             </div>
         </header>
 
         <!-- Storage Type Tabs -->
         <div class="storage-tabs">
-            <button id="tab-fridge" class="storage-tab active" onclick="selectStorage('fridge')">🧊 Frigo</button>
-            <button id="tab-pantry" class="storage-tab" onclick="selectStorage('pantry')">🗄️ Credenza</button>
+            <button id="tab-fridge" class="storage-tab active" onclick="selectStorage('fridge')">🧊 Fridge</button>
+            <button id="tab-pantry" class="storage-tab" onclick="selectStorage('pantry')">🗄️ Pantry</button>
         </div>
 
         <!-- Main Content -->
@@ -36,21 +36,21 @@
             <div class="stats-bar">
                 <div class="stat">
                     <span class="stat-number" id="total-items">0</span>
-                    <span class="stat-label">Prodotti</span>
+                    <span class="stat-label">Items</span>
                 </div>
                 <div class="stat expiring">
                     <span class="stat-number" id="expiring-soon">0</span>
-                    <span class="stat-label">In scadenza</span>
+                    <span class="stat-label">Expiring</span>
                 </div>
                 <div class="stat expired">
                     <span class="stat-number" id="expired-items">0</span>
-                    <span class="stat-label">Scaduti</span>
+                    <span class="stat-label">Expired</span>
                 </div>
             </div>
 
             <!-- Add Item Section -->
             <div class="add-section">
-                <h2>➕ Aggiungi Prodotto</h2>
+                <h2>➕ Add Item</h2>
                 
                 <!-- Scan Buttons -->
                 <div class="scan-buttons">
@@ -60,14 +60,14 @@
                     </button>
                     <button class="scan-btn ocr" onclick="startOCRScanner()">
                         <span class="icon">📅</span>
-                        <span>Foto Scadenza</span>
+                        <span>Photo Expiry</span>
                     </button>
                 </div>
 
                 <!-- Scanner Container -->
                 <div id="scanner-container" class="scanner-container hidden">
                     <div id="scanner-view"></div>
-                    <button class="close-scanner" onclick="closeScanner()">✕ Chiudi</button>
+                    <button class="close-scanner" onclick="closeScanner()">✕ Close</button>
                 </div>
 
                 <!-- OCR Container -->
@@ -75,31 +75,31 @@
                     <input type="file" id="ocr-input" accept="image/*" capture="environment" onchange="processOCR(event)">
                     <div id="ocr-preview"></div>
                     <div id="ocr-status"></div>
-                    <button class="close-scanner" onclick="closeOCR()">✕ Chiudi</button>
+                    <button class="close-scanner" onclick="closeOCR()">✕ Close</button>
                 </div>
 
                 <!-- Manual Entry Form -->
                 <form id="add-form" class="add-form" onsubmit="addItem(event)">
                     <div class="form-row">
                         <div class="form-group flex-2">
-                            <label for="product-name">Nome Prodotto</label>
-                            <input type="text" id="product-name" placeholder="es. Latte, Yogurt..." required>
+                            <label for="product-name">Product Name</label>
+                            <input type="text" id="product-name" placeholder="e.g. Milk, Yogurt..." required>
                         </div>
                         <div class="form-group flex-1">
-                            <label for="quantity">Qtà</label>
+                            <label for="quantity">Qty</label>
                             <input type="number" id="quantity" value="1" min="1">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="expiry-date">Data Scadenza</label>
+                        <label for="expiry-date">Expiry Date</label>
                         <input type="date" id="expiry-date" required>
                     </div>
-                    <button type="submit" class="submit-btn">✅ Aggiungi</button>
+                    <button type="submit" class="submit-btn">✅ Add</button>
                 </form>
 
                 <!-- Quick Add Buttons -->
                 <div class="quick-add">
-                    <h3>⚡ Aggiungi Veloce <span class="quick-add-hint">(clicca per modificare giorni)</span></h3>
+                    <h3>⚡ Quick Add <span class="quick-add-hint">(tap to edit days)</span></h3>
                     <div class="quick-buttons" id="quick-buttons">
                         <!-- Will be populated by JS -->
                     </div>
@@ -109,13 +109,13 @@
             <!-- Items List -->
             <div class="items-section">
                 <div class="items-header">
-                    <h2 id="items-title">📦 Nel Frigo</h2>
-                    <button id="export-btn" class="export-btn hidden" onclick="exportSelected()">📤 Esporta (<span id="selected-count">0</span>)</button>
+                    <h2 id="items-title">📦 In the Fridge</h2>
+                    <button id="export-btn" class="export-btn hidden" onclick="exportSelected()">📤 Export (<span id="selected-count">0</span>)</button>
                 </div>
                 <div class="filter-buttons">
-                    <button class="filter-btn active" onclick="filterItems('all')">Tutti</button>
-                    <button class="filter-btn" onclick="filterItems('expiring')">⚠️ In Scadenza</button>
-                    <button class="filter-btn" onclick="filterItems('expired')">❌ Scaduti</button>
+                    <button class="filter-btn active" onclick="filterItems('all')">All</button>
+                    <button class="filter-btn" onclick="filterItems('expiring')">⚠️ Expiring</button>
+                    <button class="filter-btn" onclick="filterItems('expired')">❌ Expired</button>
                 </div>
                 <div id="items-list" class="items-list">
                     <!-- Items will be populated here -->
@@ -126,24 +126,24 @@
         <!-- Edit Modal -->
         <div id="edit-modal" class="modal hidden">
             <div class="modal-content">
-                <h3>✏️ Modifica Prodotto</h3>
+                <h3>✏️ Edit Item</h3>
                 <form id="edit-form" onsubmit="saveEdit(event)">
                     <input type="hidden" id="edit-item-id">
                     <div class="form-group">
-                        <label for="edit-name">Nome</label>
+                        <label for="edit-name">Name</label>
                         <input type="text" id="edit-name" required>
                     </div>
                     <div class="form-group">
-                        <label for="edit-expiry">Data Scadenza</label>
+                        <label for="edit-expiry">Expiry Date</label>
                         <input type="date" id="edit-expiry" required>
                     </div>
                     <div class="form-group">
-                        <label for="edit-quantity">Quantità</label>
+                        <label for="edit-quantity">Quantity</label>
                         <input type="number" id="edit-quantity" min="1" required>
                     </div>
                     <div class="modal-buttons">
-                        <button type="button" class="btn-cancel" onclick="closeEditModal()">Annulla</button>
-                        <button type="submit" class="btn-save">💾 Salva</button>
+                        <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+                        <button type="submit" class="btn-save">💾 Save</button>
                     </div>
                 </form>
             </div>
@@ -152,19 +152,19 @@
         <!-- Quick Add Edit Modal -->
         <div id="quick-edit-modal" class="modal hidden">
             <div class="modal-content">
-                <h3>⚡ Modifica Quick-Add</h3>
+                <h3>⚡ Quick Add</h3>
                 <form id="quick-edit-form" onsubmit="confirmQuickAdd(event)">
                     <input type="hidden" id="quick-product-name">
                     <div class="form-group">
-                        <label id="quick-edit-label">Prodotto</label>
+                        <label id="quick-edit-label">Product</label>
                     </div>
                     <div class="form-group">
-                        <label for="quick-days">Giorni alla scadenza</label>
+                        <label for="quick-days">Days until expiry</label>
                         <input type="number" id="quick-days" min="1" required>
                     </div>
                     <div class="modal-buttons">
-                        <button type="button" class="btn-cancel" onclick="closeQuickEditModal()">Annulla</button>
-                        <button type="submit" class="btn-save">✅ Aggiungi</button>
+                        <button type="button" class="btn-cancel" onclick="closeQuickEditModal()">Cancel</button>
+                        <button type="submit" class="btn-save">✅ Add</button>
                     </div>
                 </form>
             </div>
@@ -173,12 +173,12 @@
         <!-- Export Modal -->
         <div id="export-modal" class="modal hidden">
             <div class="modal-content">
-                <h3>📤 Esporta Prodotti</h3>
-                <p class="export-hint">Copia e incolla in chat per chiedere una ricetta!</p>
+                <h3>📤 Export Items</h3>
+                <p class="export-hint">Copy and paste to ask MaryJane for a recipe!</p>
                 <textarea id="export-text" readonly></textarea>
                 <div class="modal-buttons">
-                    <button type="button" class="btn-cancel" onclick="closeExportModal()">Chiudi</button>
-                    <button type="button" class="btn-save" onclick="copyExport()">📋 Copia</button>
+                    <button type="button" class="btn-cancel" onclick="closeExportModal()">Close</button>
+                    <button type="button" class="btn-save" onclick="copyExport()">📋 Copy</button>
                 </div>
             </div>
         </div>
@@ -186,7 +186,7 @@
         <!-- Sync Status -->
         <div class="sync-status" id="sync-status">
             <span class="sync-icon">☁️</span>
-            <span class="sync-text">Sincronizzato</span>
+            <span class="sync-text">Saved</span>
         </div>
     </div>
 
