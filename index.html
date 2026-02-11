@@ -10,9 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icon-192.png">
     <link rel="stylesheet" href="style.css">
-    <!-- Tesseract.js for OCR -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-    <!-- html5-qrcode for barcode scanning -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
@@ -21,10 +19,16 @@
         <header class="app-header">
             <h1>🧊 FridgeTracker</h1>
             <div class="house-selector">
-                <button id="btn-casa-salvo" class="house-btn active" onclick="selectHouse('salvo')">🏠 Casa Salvo</button>
-                <button id="btn-casa-elisa" class="house-btn" onclick="selectHouse('elisa')">🏡 Casa Elisa</button>
+                <button id="btn-casa-salvo" class="house-btn active" onclick="selectHouse('salvo')">🏠 Salvo</button>
+                <button id="btn-casa-elisa" class="house-btn" onclick="selectHouse('elisa')">🏡 Elisa</button>
             </div>
         </header>
+
+        <!-- Storage Type Tabs -->
+        <div class="storage-tabs">
+            <button id="tab-fridge" class="storage-tab active" onclick="selectStorage('fridge')">🧊 Frigo</button>
+            <button id="tab-pantry" class="storage-tab" onclick="selectStorage('pantry')">🗄️ Credenza</button>
+        </div>
 
         <!-- Main Content -->
         <main class="main-content">
@@ -52,7 +56,7 @@
                 <div class="scan-buttons">
                     <button class="scan-btn barcode" onclick="startBarcodeScanner()">
                         <span class="icon">📷</span>
-                        <span>Scansiona Barcode</span>
+                        <span>Barcode</span>
                     </button>
                     <button class="scan-btn ocr" onclick="startOCRScanner()">
                         <span class="icon">📅</span>
@@ -60,7 +64,7 @@
                     </button>
                 </div>
 
-                <!-- Scanner Container (hidden by default) -->
+                <!-- Scanner Container -->
                 <div id="scanner-container" class="scanner-container hidden">
                     <div id="scanner-view"></div>
                     <button class="close-scanner" onclick="closeScanner()">✕ Chiudi</button>
@@ -76,38 +80,38 @@
 
                 <!-- Manual Entry Form -->
                 <form id="add-form" class="add-form" onsubmit="addItem(event)">
-                    <div class="form-group">
-                        <label for="product-name">Nome Prodotto</label>
-                        <input type="text" id="product-name" placeholder="es. Latte, Yogurt..." required>
+                    <div class="form-row">
+                        <div class="form-group flex-2">
+                            <label for="product-name">Nome Prodotto</label>
+                            <input type="text" id="product-name" placeholder="es. Latte, Yogurt..." required>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="quantity">Qtà</label>
+                            <input type="number" id="quantity" value="1" min="1">
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="expiry-date">Data Scadenza</label>
                         <input type="date" id="expiry-date" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="quantity">Quantità</label>
-                        <input type="number" id="quantity" value="1" min="1">
                     </div>
                     <button type="submit" class="submit-btn">✅ Aggiungi</button>
                 </form>
 
                 <!-- Quick Add Buttons -->
                 <div class="quick-add">
-                    <h3>⚡ Aggiungi Veloce</h3>
-                    <div class="quick-buttons">
-                        <button onclick="quickAdd('Latte', 7)">🥛 Latte (+7gg)</button>
-                        <button onclick="quickAdd('Yogurt', 21)">🥄 Yogurt (+21gg)</button>
-                        <button onclick="quickAdd('Uova', 28)">🥚 Uova (+28gg)</button>
-                        <button onclick="quickAdd('Mozzarella', 7)">🧀 Mozzarella (+7gg)</button>
-                        <button onclick="quickAdd('Prosciutto', 5)">🥓 Prosciutto (+5gg)</button>
-                        <button onclick="quickAdd('Pollo', 3)">🍗 Pollo (+3gg)</button>
+                    <h3>⚡ Aggiungi Veloce <span class="quick-add-hint">(clicca per modificare giorni)</span></h3>
+                    <div class="quick-buttons" id="quick-buttons">
+                        <!-- Will be populated by JS -->
                     </div>
                 </div>
             </div>
 
             <!-- Items List -->
             <div class="items-section">
-                <h2>📦 Nel Frigo</h2>
+                <div class="items-header">
+                    <h2 id="items-title">📦 Nel Frigo</h2>
+                    <button id="export-btn" class="export-btn hidden" onclick="exportSelected()">📤 Esporta (<span id="selected-count">0</span>)</button>
+                </div>
                 <div class="filter-buttons">
                     <button class="filter-btn active" onclick="filterItems('all')">Tutti</button>
                     <button class="filter-btn" onclick="filterItems('expiring')">⚠️ In Scadenza</button>
@@ -118,6 +122,66 @@
                 </div>
             </div>
         </main>
+
+        <!-- Edit Modal -->
+        <div id="edit-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3>✏️ Modifica Prodotto</h3>
+                <form id="edit-form" onsubmit="saveEdit(event)">
+                    <input type="hidden" id="edit-item-id">
+                    <div class="form-group">
+                        <label for="edit-name">Nome</label>
+                        <input type="text" id="edit-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-expiry">Data Scadenza</label>
+                        <input type="date" id="edit-expiry" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-quantity">Quantità</label>
+                        <input type="number" id="edit-quantity" min="1" required>
+                    </div>
+                    <div class="modal-buttons">
+                        <button type="button" class="btn-cancel" onclick="closeEditModal()">Annulla</button>
+                        <button type="submit" class="btn-save">💾 Salva</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Quick Add Edit Modal -->
+        <div id="quick-edit-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3>⚡ Modifica Quick-Add</h3>
+                <form id="quick-edit-form" onsubmit="confirmQuickAdd(event)">
+                    <input type="hidden" id="quick-product-name">
+                    <div class="form-group">
+                        <label id="quick-edit-label">Prodotto</label>
+                    </div>
+                    <div class="form-group">
+                        <label for="quick-days">Giorni alla scadenza</label>
+                        <input type="number" id="quick-days" min="1" required>
+                    </div>
+                    <div class="modal-buttons">
+                        <button type="button" class="btn-cancel" onclick="closeQuickEditModal()">Annulla</button>
+                        <button type="submit" class="btn-save">✅ Aggiungi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Export Modal -->
+        <div id="export-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3>📤 Esporta Prodotti</h3>
+                <p class="export-hint">Copia e incolla in chat per chiedere una ricetta!</p>
+                <textarea id="export-text" readonly></textarea>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel" onclick="closeExportModal()">Chiudi</button>
+                    <button type="button" class="btn-save" onclick="copyExport()">📋 Copia</button>
+                </div>
+            </div>
+        </div>
 
         <!-- Sync Status -->
         <div class="sync-status" id="sync-status">

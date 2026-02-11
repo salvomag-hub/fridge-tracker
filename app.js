@@ -1,24 +1,51 @@
-// FridgeTracker - Main App Logic
+// FridgeTracker - Main App Logic v2
 
 // Configuration
 const CONFIG = {
-    STORAGE_KEY: 'fridgetracker_data',
-    SYNC_URL: null, // Will be set up for cloud sync
+    STORAGE_KEY: 'fridgetracker_data_v2',
     OPEN_FOOD_FACTS_API: 'https://world.openfoodfacts.org/api/v0/product/'
+};
+
+// Quick add presets
+const QUICK_ADD_PRESETS = {
+    fridge: [
+        { name: 'Latte', emoji: '🥛', days: 7 },
+        { name: 'Yogurt', emoji: '🥄', days: 21 },
+        { name: 'Uova', emoji: '🥚', days: 28 },
+        { name: 'Mozzarella', emoji: '🧀', days: 7 },
+        { name: 'Prosciutto', emoji: '🥓', days: 5 },
+        { name: 'Pollo', emoji: '🍗', days: 3 },
+        { name: 'Formaggio', emoji: '🧀', days: 14 },
+        { name: 'Burro', emoji: '🧈', days: 30 }
+    ],
+    pantry: [
+        { name: 'Pasta', emoji: '🍝', days: 365 },
+        { name: 'Riso', emoji: '🍚', days: 365 },
+        { name: 'Tonno', emoji: '🐟', days: 730 },
+        { name: 'Passata', emoji: '🍅', days: 365 },
+        { name: 'Olio', emoji: '🫒', days: 545 },
+        { name: 'Biscotti', emoji: '🍪', days: 180 },
+        { name: 'Cereali', emoji: '🥣', days: 180 },
+        { name: 'Crackers', emoji: '🥨', days: 180 }
+    ]
 };
 
 // State
 let currentHouse = 'salvo';
+let currentStorage = 'fridge';
 let currentFilter = 'all';
+let selectedItems = new Set();
 let html5QrcodeScanner = null;
+
 let data = {
-    salvo: [],
-    elisa: []
+    salvo: { fridge: [], pantry: [] },
+    elisa: { fridge: [], pantry: [] }
 };
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
     loadData();
+    renderQuickAddButtons();
     renderItems();
     updateStats();
     
@@ -32,7 +59,16 @@ function loadData() {
     const saved = localStorage.getItem(CONFIG.STORAGE_KEY);
     if (saved) {
         try {
-            data = JSON.parse(saved);
+            const parsed = JSON.parse(saved);
+            // Migrate from old format if needed
+            if (Array.isArray(parsed.salvo)) {
+                data = {
+                    salvo: { fridge: parsed.salvo, pantry: [] },
+                    elisa: { fridge: parsed.elisa, pantry: [] }
+                };
+            } else {
+                data = parsed;
+            }
         } catch (e) {
             console.error('Error loading data:', e);
         }
@@ -43,34 +79,21 @@ function saveData() {
     localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(data));
     updateSyncStatus('syncing');
     
-    // Simulate cloud sync (will be replaced with actual sync)
     setTimeout(() => {
         updateSyncStatus('synced');
-        // Also save to a file for MaryJane to read
         saveToCloud();
     }, 500);
 }
 
 async function saveToCloud() {
-    // This will be implemented to sync with MaryJane's backend
-    // For now, we'll use a webhook or file-based approach
     try {
-        // Store data in a format MaryJane can read
         const syncData = {
             lastUpdated: new Date().toISOString(),
-            houses: data
+            data: data
         };
-        
-        // Try to sync via webhook if available
-        if (CONFIG.SYNC_URL) {
-            await fetch(CONFIG.SYNC_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(syncData)
-            });
-        }
+        console.log('Data saved:', syncData);
     } catch (e) {
-        console.log('Cloud sync not available, using local storage');
+        console.log('Cloud sync not available');
     }
 }
 
@@ -79,24 +102,99 @@ function updateSyncStatus(status) {
     el.className = 'sync-status ' + status;
     
     if (status === 'syncing') {
-        el.innerHTML = '<span class="sync-icon">🔄</span><span class="sync-text">Sincronizzazione...</span>';
+        el.innerHTML = '<span class="sync-icon">🔄</span><span class="sync-text">Salvataggio...</span>';
     } else if (status === 'synced') {
-        el.innerHTML = '<span class="sync-icon">☁️</span><span class="sync-text">Sincronizzato</span>';
+        el.innerHTML = '<span class="sync-icon">☁️</span><span class="sync-text">Salvato</span>';
     } else if (status === 'error') {
-        el.innerHTML = '<span class="sync-icon">⚠️</span><span class="sync-text">Errore sync</span>';
+        el.innerHTML = '<span class="sync-icon">⚠️</span><span class="sync-text">Errore</span>';
     }
 }
 
 // House Selection
 function selectHouse(house) {
     currentHouse = house;
+    selectedItems.clear();
     
-    // Update button styles
     document.querySelectorAll('.house-btn').forEach(btn => btn.classList.remove('active'));
     document.getElementById(`btn-casa-${house}`).classList.add('active');
     
     renderItems();
     updateStats();
+    updateExportButton();
+}
+
+// Storage Selection (Fridge/Pantry)
+function selectStorage(storage) {
+    currentStorage = storage;
+    selectedItems.clear();
+    
+    document.querySelectorAll('.storage-tab').forEach(tab => tab.classList.remove('active'));
+    document.getElementById(`tab-${storage}`).classList.add('active');
+    
+    // Update body class for color theming
+    if (storage === 'pantry') {
+        document.body.classList.add('pantry-mode');
+    } else {
+        document.body.classList.remove('pantry-mode');
+    }
+    
+    // Update title
+    const title = document.getElementById('items-title');
+    title.textContent = storage === 'fridge' ? '📦 Nel Frigo' : '📦 In Credenza';
+    
+    renderQuickAddButtons();
+    renderItems();
+    updateStats();
+    updateExportButton();
+}
+
+// Quick Add Buttons
+function renderQuickAddButtons() {
+    const container = document.getElementById('quick-buttons');
+    const presets = QUICK_ADD_PRESETS[currentStorage];
+    
+    container.innerHTML = presets.map(p => `
+        <button onclick="openQuickAddModal('${p.name}', ${p.days})">
+            ${p.emoji} ${p.name} <span class="days">(+${p.days}gg)</span>
+        </button>
+    `).join('');
+}
+
+function openQuickAddModal(name, days) {
+    document.getElementById('quick-product-name').value = name;
+    document.getElementById('quick-edit-label').textContent = `${name}`;
+    document.getElementById('quick-days').value = days;
+    document.getElementById('quick-edit-modal').classList.remove('hidden');
+}
+
+function closeQuickEditModal() {
+    document.getElementById('quick-edit-modal').classList.add('hidden');
+}
+
+function confirmQuickAdd(event) {
+    event.preventDefault();
+    
+    const name = document.getElementById('quick-product-name').value;
+    const days = parseInt(document.getElementById('quick-days').value);
+    
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate() + days);
+    
+    const item = {
+        id: Date.now(),
+        name: name,
+        expiry: expiry.toISOString().split('T')[0],
+        quantity: 1,
+        addedAt: new Date().toISOString()
+    };
+    
+    data[currentHouse][currentStorage].push(item);
+    saveData();
+    renderItems();
+    updateStats();
+    
+    closeQuickEditModal();
+    showToast(`✅ ${name} aggiunto!`, 'success');
 }
 
 // Add Item
@@ -120,62 +218,150 @@ function addItem(event) {
         addedAt: new Date().toISOString()
     };
     
-    data[currentHouse].push(item);
+    data[currentHouse][currentStorage].push(item);
     saveData();
     renderItems();
     updateStats();
     
-    // Reset form
     document.getElementById('product-name').value = '';
     document.getElementById('quantity').value = '1';
     
     showToast(`✅ ${name} aggiunto!`, 'success');
 }
 
-// Quick Add
-function quickAdd(name, daysToExpiry) {
-    const expiry = new Date();
-    expiry.setDate(expiry.getDate() + daysToExpiry);
+// Edit Item
+function openEditModal(id) {
+    const item = data[currentHouse][currentStorage].find(i => i.id === id);
+    if (!item) return;
     
-    const item = {
-        id: Date.now(),
-        name: name,
-        expiry: expiry.toISOString().split('T')[0],
-        quantity: 1,
-        addedAt: new Date().toISOString()
-    };
+    document.getElementById('edit-item-id').value = id;
+    document.getElementById('edit-name').value = item.name;
+    document.getElementById('edit-expiry').value = item.expiry;
+    document.getElementById('edit-quantity').value = item.quantity;
     
-    data[currentHouse].push(item);
-    saveData();
-    renderItems();
-    updateStats();
+    document.getElementById('edit-modal').classList.remove('hidden');
+}
+
+function closeEditModal() {
+    document.getElementById('edit-modal').classList.add('hidden');
+}
+
+function saveEdit(event) {
+    event.preventDefault();
     
-    showToast(`✅ ${name} aggiunto!`, 'success');
+    const id = parseInt(document.getElementById('edit-item-id').value);
+    const item = data[currentHouse][currentStorage].find(i => i.id === id);
+    
+    if (item) {
+        item.name = document.getElementById('edit-name').value.trim();
+        item.expiry = document.getElementById('edit-expiry').value;
+        item.quantity = parseInt(document.getElementById('edit-quantity').value) || 1;
+        
+        saveData();
+        renderItems();
+        updateStats();
+        showToast('✅ Modificato!', 'success');
+    }
+    
+    closeEditModal();
 }
 
 // Delete Item
-function deleteItem(id) {
-    data[currentHouse] = data[currentHouse].filter(item => item.id !== id);
+function deleteItem(id, event) {
+    if (event) event.stopPropagation();
+    
+    data[currentHouse][currentStorage] = data[currentHouse][currentStorage].filter(item => item.id !== id);
+    selectedItems.delete(id);
+    
     saveData();
     renderItems();
     updateStats();
-    showToast('🗑️ Prodotto rimosso', 'success');
+    updateExportButton();
+    showToast('🗑️ Rimosso', 'success');
 }
 
-// Update Quantity
-function updateQuantity(id, delta) {
-    const item = data[currentHouse].find(item => item.id === id);
-    if (item) {
-        item.quantity = Math.max(1, item.quantity + delta);
-        saveData();
-        renderItems();
+// Selection for Export
+function toggleSelection(id, event) {
+    event.stopPropagation();
+    
+    if (selectedItems.has(id)) {
+        selectedItems.delete(id);
+    } else {
+        selectedItems.add(id);
+    }
+    
+    renderItems();
+    updateExportButton();
+}
+
+function updateExportButton() {
+    const btn = document.getElementById('export-btn');
+    const count = document.getElementById('selected-count');
+    
+    if (selectedItems.size > 0) {
+        btn.classList.remove('hidden');
+        count.textContent = selectedItems.size;
+    } else {
+        btn.classList.add('hidden');
+    }
+}
+
+// Export
+function exportSelected() {
+    const items = data[currentHouse][currentStorage].filter(i => selectedItems.has(i.id));
+    
+    if (items.length === 0) {
+        showToast('Seleziona almeno un prodotto', 'error');
+        return;
+    }
+    
+    const storageName = currentStorage === 'fridge' ? 'frigo' : 'credenza';
+    const houseName = currentHouse === 'salvo' ? 'Casa Salvo' : 'Casa Elisa';
+    
+    let text = `🍳 Ho questi ingredienti (${houseName} - ${storageName}):\n\n`;
+    items.forEach(item => {
+        const daysLeft = getDaysLeft(item.expiry);
+        let status = '';
+        if (daysLeft < 0) status = ' ⚠️ SCADUTO';
+        else if (daysLeft <= 2) status = ' ⚠️ scade presto';
+        
+        text += `• ${item.name} (x${item.quantity})${status}\n`;
+    });
+    text += `\nCosa posso cucinare?`;
+    
+    document.getElementById('export-text').value = text;
+    document.getElementById('export-modal').classList.remove('hidden');
+}
+
+function closeExportModal() {
+    document.getElementById('export-modal').classList.add('hidden');
+}
+
+function copyExport() {
+    const text = document.getElementById('export-text').value;
+    
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('📋 Copiato!', 'success');
+            closeExportModal();
+            
+            // Clear selection after export
+            selectedItems.clear();
+            renderItems();
+            updateExportButton();
+        });
+    } else {
+        // Fallback
+        document.getElementById('export-text').select();
+        document.execCommand('copy');
+        showToast('📋 Copiato!', 'success');
     }
 }
 
 // Render Items
 function renderItems() {
     const container = document.getElementById('items-list');
-    let items = [...data[currentHouse]];
+    let items = [...data[currentHouse][currentStorage]];
     
     // Sort by expiry date
     items.sort((a, b) => new Date(a.expiry) - new Date(b.expiry));
@@ -196,18 +382,21 @@ function renderItems() {
     }
     
     if (items.length === 0) {
+        const emptyIcon = currentStorage === 'fridge' ? '🧊' : '🗄️';
+        const emptyText = currentFilter === 'all' 
+            ? `Nessun prodotto ${currentStorage === 'fridge' ? 'nel frigo' : 'in credenza'}` 
+            : 'Nessun prodotto in questa categoria';
         container.innerHTML = `
             <div class="empty-state">
-                <div class="icon">🧊</div>
-                <p>${currentFilter === 'all' ? 'Nessun prodotto nel frigo' : 'Nessun prodotto in questa categoria'}</p>
+                <div class="icon">${emptyIcon}</div>
+                <p>${emptyText}</p>
             </div>
         `;
         return;
     }
     
     container.innerHTML = items.map(item => {
-        const expiry = new Date(item.expiry);
-        const daysLeft = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+        const daysLeft = getDaysLeft(item.expiry);
         
         let statusClass = '';
         let expiryText = '';
@@ -225,22 +414,37 @@ function renderItems() {
             expiryText = `Scade il ${formatDate(item.expiry)}`;
         }
         
+        const isSelected = selectedItems.has(item.id);
+        
         return `
-            <div class="item-card ${statusClass}">
+            <div class="item-card ${statusClass} ${isSelected ? 'selected' : ''}" onclick="openEditModal(${item.id})">
+                <input type="checkbox" class="item-checkbox" 
+                    ${isSelected ? 'checked' : ''} 
+                    onclick="toggleSelection(${item.id}, event)">
                 <div class="item-info">
                     <div class="item-name">${escapeHtml(item.name)}</div>
                     <div class="item-expiry ${statusClass}">${expiryText}</div>
                 </div>
                 <span class="item-quantity">x${item.quantity}</span>
-                <button class="item-delete" onclick="deleteItem(${item.id})">🗑️</button>
+                <div class="item-actions">
+                    <button class="item-edit" onclick="openEditModal(${item.id}); event.stopPropagation();">✏️</button>
+                    <button class="item-delete" onclick="deleteItem(${item.id}, event)">🗑️</button>
+                </div>
             </div>
         `;
     }).join('');
 }
 
+function getDaysLeft(expiryDate) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expiry = new Date(expiryDate);
+    return Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+}
+
 // Update Stats
 function updateStats() {
-    const items = data[currentHouse];
+    const items = data[currentHouse][currentStorage];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
@@ -284,9 +488,7 @@ function startBarcodeScanner() {
             aspectRatio: 1.777
         },
         onBarcodeScanned,
-        (errorMessage) => {
-            // Ignore scan errors
-        }
+        (errorMessage) => {}
     ).catch(err => {
         console.error("Scanner error:", err);
         showToast('Errore accesso fotocamera', 'error');
@@ -295,13 +497,10 @@ function startBarcodeScanner() {
 }
 
 async function onBarcodeScanned(barcode) {
-    // Stop scanner
     closeScanner();
-    
     showToast('🔍 Cerco prodotto...', 'success');
     
     try {
-        // Look up product in Open Food Facts
         const response = await fetch(`${CONFIG.OPEN_FOOD_FACTS_API}${barcode}.json`);
         const result = await response.json();
         
@@ -311,16 +510,14 @@ async function onBarcodeScanned(barcode) {
             
             document.getElementById('product-name').value = name;
             showToast(`✅ Trovato: ${name}`, 'success');
-            
-            // Focus on expiry date
             document.getElementById('expiry-date').focus();
         } else {
-            showToast('Prodotto non trovato nel database', 'error');
+            showToast('Prodotto non trovato', 'error');
             document.getElementById('product-name').focus();
         }
     } catch (e) {
         console.error('Error looking up barcode:', e);
-        showToast('Errore ricerca prodotto', 'error');
+        showToast('Errore ricerca', 'error');
     }
 }
 
@@ -348,19 +545,16 @@ async function processOCR(event) {
     const preview = document.getElementById('ocr-preview');
     const status = document.getElementById('ocr-status');
     
-    // Show preview
     const reader = new FileReader();
     reader.onload = (e) => {
         preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
     };
     reader.readAsDataURL(file);
     
-    // Show status
     status.textContent = '🔍 Analizzo immagine...';
     status.classList.add('visible');
     
     try {
-        // Run OCR
         const result = await Tesseract.recognize(file, 'ita+eng', {
             logger: m => {
                 if (m.status === 'recognizing text') {
@@ -369,39 +563,32 @@ async function processOCR(event) {
             }
         });
         
-        // Extract date from text
         const text = result.data.text;
         const dateMatch = extractDate(text);
         
         if (dateMatch) {
             document.getElementById('expiry-date').value = dateMatch;
             status.textContent = `✅ Trovata data: ${formatDate(dateMatch)}`;
-            showToast('Data scadenza rilevata!', 'success');
+            showToast('Data rilevata!', 'success');
         } else {
-            status.textContent = '⚠️ Nessuna data trovata. Inseriscila manualmente.';
+            status.textContent = '⚠️ Nessuna data trovata';
             showToast('Data non trovata', 'error');
         }
         
-        // Close OCR after a delay
         setTimeout(closeOCR, 2000);
         
     } catch (e) {
         console.error('OCR error:', e);
-        status.textContent = '❌ Errore analisi immagine';
+        status.textContent = '❌ Errore analisi';
         showToast('Errore OCR', 'error');
     }
 }
 
 function extractDate(text) {
-    // Common Italian date formats
     const patterns = [
-        // DD/MM/YYYY or DD-MM-YYYY
-        /(\d{1,2})[\/\-](\d{1,2})[\/\-](20\d{2})/,
-        // DD/MM/YY or DD-MM-YY
-        /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})/,
-        // "scad" followed by date
-        /scad[a-z]*[:\s]*(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/i,
-        // Month names in Italian
+        /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](20\d{2})/,
+        /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2})/,
+        /scad[a-z]*[:\s]*(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/i,
         /(\d{1,2})\s*(gen|feb|mar|apr|mag|giu|lug|ago|set|ott|nov|dic)[a-z]*\s*(20\d{2}|\d{2})/i
     ];
     
@@ -410,8 +597,7 @@ function extractDate(text) {
         if (match) {
             let day, month, year;
             
-            if (match[2].match(/[a-z]/i)) {
-                // Month name format
+            if (match[2].match && match[2].match(/[a-z]/i)) {
                 day = parseInt(match[1]);
                 month = getMonthNumber(match[2]);
                 year = match[3].length === 2 ? 2000 + parseInt(match[3]) : parseInt(match[3]);
@@ -459,7 +645,6 @@ function escapeHtml(text) {
 }
 
 function showToast(message, type = 'info') {
-    // Remove existing toasts
     document.querySelectorAll('.toast').forEach(t => t.remove());
     
     const toast = document.createElement('div');
@@ -470,35 +655,9 @@ function showToast(message, type = 'info') {
     setTimeout(() => toast.remove(), 3000);
 }
 
-// Export data for MaryJane integration
-function exportData() {
-    return JSON.stringify(data, null, 2);
-}
-
-// Import data (for MaryJane to add items)
-function importItem(house, name, expiry, quantity = 1) {
-    const item = {
-        id: Date.now(),
-        name: name,
-        expiry: expiry,
-        quantity: quantity,
-        addedAt: new Date().toISOString()
-    };
-    
-    data[house].push(item);
-    saveData();
-    
-    if (house === currentHouse) {
-        renderItems();
-        updateStats();
-    }
-    
-    return item;
-}
-
-// Check expiring items (called by MaryJane)
+// Export functions for MaryJane integration
 function getExpiringItems(daysAhead = 2) {
-    const result = { salvo: [], elisa: [] };
+    const result = { salvo: { fridge: [], pantry: [] }, elisa: { fridge: [], pantry: [] } };
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
@@ -506,22 +665,38 @@ function getExpiringItems(daysAhead = 2) {
     threshold.setDate(threshold.getDate() + daysAhead);
     
     for (const house of ['salvo', 'elisa']) {
-        result[house] = data[house].filter(item => {
-            const expiry = new Date(item.expiry);
-            return expiry <= threshold;
-        }).map(item => ({
-            ...item,
-            daysLeft: Math.ceil((new Date(item.expiry) - today) / (1000 * 60 * 60 * 24))
-        }));
+        for (const storage of ['fridge', 'pantry']) {
+            result[house][storage] = data[house][storage].filter(item => {
+                const expiry = new Date(item.expiry);
+                return expiry <= threshold;
+            }).map(item => ({
+                ...item,
+                daysLeft: getDaysLeft(item.expiry)
+            }));
+        }
     }
     
     return result;
 }
 
-// Make functions available globally for debugging
+// Global API
 window.FridgeTracker = {
-    exportData,
-    importItem,
+    getData: () => data,
     getExpiringItems,
-    data: () => data
+    addItem: (house, storage, name, expiry, quantity = 1) => {
+        const item = {
+            id: Date.now(),
+            name,
+            expiry,
+            quantity,
+            addedAt: new Date().toISOString()
+        };
+        data[house][storage].push(item);
+        saveData();
+        if (house === currentHouse && storage === currentStorage) {
+            renderItems();
+            updateStats();
+        }
+        return item;
+    }
 };
