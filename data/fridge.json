@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-12T08:24:49.203Z",
+  "lastUpdated": "2026-02-12T08:27:52.934Z",
   "salvo": {
     "fridge": [
       {
@@ -15,6 +15,13 @@
         "expiry": "2026-03-05",
         "quantity": 1,
         "addedAt": "2026-02-12T08:24:49.202Z"
+      },
+      {
+        "id": 1770884872933,
+        "name": "Cheese",
+        "expiry": "2026-02-26",
+        "quantity": 1,
+        "addedAt": "2026-02-12T08:27:52.933Z"
       }
     ],
     "pantry": []
