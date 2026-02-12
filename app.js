@@ -120,19 +120,21 @@ let fileSha = null;
 async function loadFromCloud() {
     updateSyncStatus('syncing');
     try {
-        // Use GitHub API for reading (no cache issues)
+        // Use GitHub API with cache-busting
+        const cacheBuster = Date.now();
         const response = await fetch(
-            `https://api.github.com/repos/${CONFIG.GITHUB_REPO}/contents/${CONFIG.GITHUB_FILE}`,
+            `https://api.github.com/repos/${CONFIG.GITHUB_REPO}/contents/${CONFIG.GITHUB_FILE}?_=${cacheBuster}`,
             { 
                 headers: { 
-                    'Accept': 'application/vnd.github.v3.raw',
-                    'Cache-Control': 'no-cache'
-                } 
+                    'Accept': 'application/vnd.github.v3.raw'
+                },
+                cache: 'no-store'
             }
         );
         
         if (response.ok) {
             const cloudData = await response.json();
+            console.log('📥 Loaded:', cloudData);
             if (cloudData.salvo && cloudData.elisa) {
                 data = {
                     salvo: cloudData.salvo,
@@ -140,11 +142,12 @@ async function loadFromCloud() {
                 };
                 localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(data));
                 updateSyncStatus('synced');
-                console.log('✅ Loaded from GitHub');
+                console.log('✅ Loaded from GitHub:', data.salvo.fridge.length, 'items');
                 await getFileSha();
                 return true;
             }
         }
+        console.error('Load failed:', response.status);
         throw new Error('GitHub load failed');
     } catch (e) {
         console.error('GitHub error:', e);
