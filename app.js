@@ -19,25 +19,44 @@ function setGitHubToken(token) {
 }
 
 function checkTokenInUrl() {
+    // Check URL params
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
     if (token && token.startsWith('github_pat_')) {
         setGitHubToken(token);
-        // Remove token from URL for security (keeps it out of history)
+        // Remove token from URL for security
         window.history.replaceState({}, '', window.location.pathname);
         console.log('✅ Token saved from URL');
+        showToast('🔑 Token salvato!', 'success');
         return true;
+    }
+    // Also check hash (in case URL has #token=xxx)
+    const hash = window.location.hash;
+    if (hash && hash.includes('token=')) {
+        const hashToken = hash.split('token=')[1]?.split('&')[0];
+        if (hashToken && hashToken.startsWith('github_pat_')) {
+            setGitHubToken(hashToken);
+            window.history.replaceState({}, '', window.location.pathname);
+            console.log('✅ Token saved from hash');
+            showToast('🔑 Token salvato!', 'success');
+            return true;
+        }
     }
     return false;
 }
 
 function promptForToken() {
-    const token = prompt('🔑 Enter GitHub token for sync (get it from Salvo):');
+    // Check again in case it was saved by another tab
+    let existing = getGitHubToken();
+    if (existing) return existing;
+    
+    const token = prompt('🔑 Per salvare, inserisci il token GitHub.\n\nChiedilo a Salvo o usa il link con ?token=xxx');
     if (token && token.startsWith('github_pat_')) {
         setGitHubToken(token);
-        showToast('✅ Token saved!', 'success');
+        showToast('✅ Token salvato!', 'success');
         return token;
     }
+    showToast('⚠️ Senza token i dati restano solo locali', 'info');
     return null;
 }
 
