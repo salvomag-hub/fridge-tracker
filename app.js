@@ -120,21 +120,26 @@ let fileSha = null;
 async function loadFromCloud() {
     updateSyncStatus('syncing');
     try {
-        // Use GitHub API with cache-busting
+        const token = getGitHubToken();
         const cacheBuster = Date.now();
+        
+        // Use token if available (better rate limit + no cache)
+        const headers = { 
+            'Accept': 'application/vnd.github.v3.raw',
+            'If-None-Match': '' // Force fresh
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
         const response = await fetch(
-            `https://api.github.com/repos/${CONFIG.GITHUB_REPO}/contents/${CONFIG.GITHUB_FILE}?_=${cacheBuster}`,
-            { 
-                headers: { 
-                    'Accept': 'application/vnd.github.v3.raw'
-                },
-                cache: 'no-store'
-            }
+            `https://api.github.com/repos/${CONFIG.GITHUB_REPO}/contents/${CONFIG.GITHUB_FILE}?ref=main&_=${cacheBuster}`,
+            { headers, cache: 'no-store' }
         );
         
         if (response.ok) {
             const cloudData = await response.json();
-            console.log('📥 Loaded:', cloudData);
+            console.log('📥 Loaded:', cloudData.salvo?.fridge?.length || 0, 'items in fridge');
             if (cloudData.salvo && cloudData.elisa) {
                 data = {
                     salvo: cloudData.salvo,
@@ -142,7 +147,7 @@ async function loadFromCloud() {
                 };
                 localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(data));
                 updateSyncStatus('synced');
-                console.log('✅ Loaded from GitHub:', data.salvo.fridge.length, 'items');
+                showToast(`📥 Caricati ${data.salvo.fridge.length + data.elisa.fridge.length} prodotti`, 'success');
                 await getFileSha();
                 return true;
             }
