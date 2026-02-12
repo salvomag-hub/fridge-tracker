@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-12T10:12:16.962Z",
+  "lastUpdated": "2026-02-12T10:12:23.303Z",
   "salvo": {
     "fridge": [
       {
@@ -13,7 +13,7 @@
         "id": 1770891136961,
         "name": "Kefir",
         "expiry": "2026-03-19",
-        "quantity": 1,
+        "quantity": 4,
         "addedAt": "2026-02-12T10:12:16.961Z"
       }
     ],
