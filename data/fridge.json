@@ -1,7 +1,15 @@
 {
-  "lastUpdated": "2026-02-12T07:52:38.449Z",
+  "lastUpdated": "2026-02-12T07:56:12.985Z",
   "salvo": {
-    "fridge": [],
+    "fridge": [
+      {
+        "id": 1770882972984,
+        "name": "Mozzarella",
+        "expiry": "2026-02-19",
+        "quantity": 1,
+        "addedAt": "2026-02-12T07:56:12.984Z"
+      }
+    ],
     "pantry": []
   },
   "elisa": {
