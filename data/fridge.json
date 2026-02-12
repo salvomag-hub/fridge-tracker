@@ -1,13 +1,13 @@
 {
-  "lastUpdated": "2026-02-12T08:20:30.558Z",
+  "lastUpdated": "2026-02-12T08:20:49.991Z",
   "salvo": {
     "fridge": [
       {
-        "id": 1770884385112,
-        "name": "Hburger",
-        "expiry": "2026-02-12",
-        "quantity": 2,
-        "addedAt": "2026-02-12T08:19:45.112Z"
+        "id": 1770884449991,
+        "name": "Milk",
+        "expiry": "2026-02-19",
+        "quantity": 1,
+        "addedAt": "2026-02-12T08:20:49.991Z"
       }
     ],
     "pantry": []
