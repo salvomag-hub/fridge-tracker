@@ -1,7 +1,15 @@
 {
-  "lastUpdated": "2026-02-12T10:10:36.320Z",
+  "lastUpdated": "2026-02-12T10:12:00.285Z",
   "salvo": {
-    "fridge": [],
+    "fridge": [
+      {
+        "id": 1770891120285,
+        "name": "Yogurt",
+        "expiry": "2026-03-25",
+        "quantity": 1,
+        "addedAt": "2026-02-12T10:12:00.285Z"
+      }
+    ],
     "pantry": []
   },
   "elisa": {
