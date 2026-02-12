@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-12T10:13:29.552Z",
+  "lastUpdated": "2026-02-12T10:14:46.972Z",
   "salvo": {
     "fridge": [
       {
@@ -22,6 +22,13 @@
         "expiry": "2026-02-15",
         "quantity": 1,
         "addedAt": "2026-02-12T10:13:29.551Z"
+      },
+      {
+        "id": 1770891286971,
+        "name": "Fila e fondi con mozzarella",
+        "expiry": "2026-05-01",
+        "quantity": 1,
+        "addedAt": "2026-02-12T10:14:46.971Z"
       }
     ],
     "pantry": []
