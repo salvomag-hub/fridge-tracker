@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-12T10:15:46.697Z",
+  "lastUpdated": "2026-02-12T10:16:11.678Z",
   "salvo": {
     "fridge": [
       {
@@ -43,6 +43,13 @@
         "expiry": "2026-07-04",
         "quantity": 1,
         "addedAt": "2026-02-12T10:15:46.697Z"
+      },
+      {
+        "id": 1770891371677,
+        "name": "Peperone",
+        "expiry": "2026-02-15",
+        "quantity": 1,
+        "addedAt": "2026-02-12T10:16:11.677Z"
       }
     ],
     "pantry": []
