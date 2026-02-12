@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-12T10:18:36.393Z",
+  "lastUpdated": "2026-02-12T10:19:13.491Z",
   "salvo": {
     "fridge": [
       {
@@ -78,6 +78,13 @@
         "expiry": "2026-10-04",
         "quantity": 1,
         "addedAt": "2026-02-12T10:18:36.392Z"
+      },
+      {
+        "id": 1770891553491,
+        "name": "Ketchup",
+        "expiry": "2026-08-01",
+        "quantity": 1,
+        "addedAt": "2026-02-12T10:19:13.491Z"
       }
     ],
     "pantry": []
