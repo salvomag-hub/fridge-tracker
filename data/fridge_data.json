@@ -1,7 +1,15 @@
 {
-  "lastUpdated": "2026-02-11T22:53:00Z",
+  "lastUpdated": "2026-02-12T05:38:26+00:00",
   "salvo": {
-    "fridge": [],
+    "fridge": [
+      {
+        "id": 1739342300000,
+        "name": "Test Latte",
+        "expiry": "2026-02-19",
+        "quantity": 1,
+        "addedAt": "2026-02-12T05:38:00Z"
+      }
+    ],
     "pantry": []
   },
   "elisa": {

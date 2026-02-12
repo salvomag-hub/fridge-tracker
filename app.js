@@ -3,7 +3,7 @@
 // Configuration
 const CONFIG = {
     STORAGE_KEY: 'fridgetracker_data_v2',
-    CLOUD_URL: 'http://135.181.151.19:8081/fridge',
+    CLOUD_URL: 'https://seems-losses-prepared-strategic.trycloudflare.com/fridge',
     OPEN_FOOD_FACTS_API: 'https://world.openfoodfacts.org/api/v0/product/'
 };
 
