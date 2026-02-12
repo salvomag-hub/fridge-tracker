@@ -1,15 +1,7 @@
 {
-  "lastUpdated": "2026-02-12T07:52:37.352Z",
+  "lastUpdated": "2026-02-12T07:52:38.449Z",
   "salvo": {
-    "fridge": [
-      {
-        "id": 1770882737669,
-        "name": "Ham",
-        "expiry": "2026-02-17",
-        "quantity": 1,
-        "addedAt": "2026-02-12T07:52:17.669Z"
-      }
-    ],
+    "fridge": [],
     "pantry": []
   },
   "elisa": {
