@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-12T10:19:13.491Z",
+  "lastUpdated": "2026-02-12T10:19:41.661Z",
   "salvo": {
     "fridge": [
       {
@@ -85,6 +85,13 @@
         "expiry": "2026-08-01",
         "quantity": 1,
         "addedAt": "2026-02-12T10:19:13.491Z"
+      },
+      {
+        "id": 1770891581660,
+        "name": "Hamburger",
+        "expiry": "2026-02-13",
+        "quantity": 2,
+        "addedAt": "2026-02-12T10:19:41.660Z"
       }
     ],
     "pantry": []
