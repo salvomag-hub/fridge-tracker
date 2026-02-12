@@ -9,13 +9,26 @@ const CONFIG = {
     OPEN_FOOD_FACTS_API: 'https://world.openfoodfacts.org/api/v0/product/'
 };
 
-// Get GitHub token from localStorage
+// Get GitHub token from localStorage or URL
 function getGitHubToken() {
     return localStorage.getItem(CONFIG.TOKEN_KEY);
 }
 
 function setGitHubToken(token) {
     localStorage.setItem(CONFIG.TOKEN_KEY, token);
+}
+
+function checkTokenInUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    if (token && token.startsWith('github_pat_')) {
+        setGitHubToken(token);
+        // Remove token from URL for security (keeps it out of history)
+        window.history.replaceState({}, '', window.location.pathname);
+        console.log('✅ Token saved from URL');
+        return true;
+    }
+    return false;
 }
 
 function promptForToken() {
@@ -67,7 +80,10 @@ let data = {
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', async () => {
-    // Load from cloud first
+    // Check for token in URL first
+    checkTokenInUrl();
+    
+    // Load from cloud
     await loadFromCloud();
     
     renderQuickAddButtons();
