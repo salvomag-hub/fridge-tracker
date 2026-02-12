@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-12T10:12:23.303Z",
+  "lastUpdated": "2026-02-12T10:13:29.552Z",
   "salvo": {
     "fridge": [
       {
@@ -15,6 +15,13 @@
         "expiry": "2026-03-19",
         "quantity": 4,
         "addedAt": "2026-02-12T10:12:16.961Z"
+      },
+      {
+        "id": 1770891209551,
+        "name": "Cherry WVine Tomatoes",
+        "expiry": "2026-02-15",
+        "quantity": 1,
+        "addedAt": "2026-02-12T10:13:29.551Z"
       }
     ],
     "pantry": []
