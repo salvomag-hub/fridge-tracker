@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-12T10:15:07.866Z",
+  "lastUpdated": "2026-02-12T10:15:46.697Z",
   "salvo": {
     "fridge": [
       {
@@ -36,6 +36,13 @@
         "expiry": "2026-07-04",
         "quantity": 1,
         "addedAt": "2026-02-12T10:15:07.865Z"
+      },
+      {
+        "id": 1770891346697,
+        "name": "Olive",
+        "expiry": "2026-07-04",
+        "quantity": 1,
+        "addedAt": "2026-02-12T10:15:46.697Z"
       }
     ],
     "pantry": []
