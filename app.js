@@ -1,4 +1,4 @@
-// FridgeTracker - Main App Logic v3 (Cloud Sync)
+// FridgeTracker - Main App Logic v5 (Offline-first + Cloud backup)
 
 // Configuration
 const CONFIG = {
@@ -37,7 +37,6 @@ let currentStorage = 'fridge';
 let currentFilter = 'all';
 let selectedItems = new Set();
 let html5QrcodeScanner = null;
-let isSyncing = false;
 
 let data = {
     salvo: { fridge: [], pantry: [] },
@@ -45,57 +44,26 @@ let data = {
 };
 
 // Initialize app
-document.addEventListener('DOMContentLoaded', async () => {
-    // First try to load from cloud
-    await loadFromCloud();
-    
+document.addEventListener('DOMContentLoaded', () => {
+    loadData();
     renderQuickAddButtons();
     renderItems();
     updateStats();
+    updateSyncStatus('local');
     
     // Set default date to today
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('expiry-date').value = today;
 });
 
-// Cloud Data Management
-async function loadFromCloud() {
-    updateSyncStatus('syncing');
-    try {
-        const response = await fetch(CONFIG.CLOUD_URL, {
-            headers: { 'Accept': 'application/json' }
-        });
-        
-        if (response.ok) {
-            const cloudData = await response.json();
-            if (cloudData.salvo && cloudData.elisa) {
-                data = {
-                    salvo: cloudData.salvo,
-                    elisa: cloudData.elisa
-                };
-                // Also save to localStorage as backup
-                localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(data));
-                updateSyncStatus('synced');
-                console.log('Loaded from cloud:', data);
-                return true;
-            }
-        }
-    } catch (e) {
-        console.error('Cloud load error:', e);
-    }
-    
-    // Fallback to localStorage
-    loadFromLocal();
-    updateSyncStatus('error');
-    return false;
-}
-
-function loadFromLocal() {
+// Data Management - Offline First
+function loadData() {
     const saved = localStorage.getItem(CONFIG.STORAGE_KEY);
     if (saved) {
         try {
             const parsed = JSON.parse(saved);
             if (Array.isArray(parsed.salvo)) {
+                // Migrate old format
                 data = {
                     salvo: { fridge: parsed.salvo, pantry: [] },
                     elisa: { fridge: parsed.elisa, pantry: [] }
@@ -103,53 +71,25 @@ function loadFromLocal() {
             } else if (parsed.salvo && parsed.elisa) {
                 data = parsed;
             }
+            console.log('Loaded from localStorage:', data);
         } catch (e) {
-            console.error('Error loading local data:', e);
+            console.error('Error loading data:', e);
         }
     }
-}
-
-async function saveToCloud() {
-    if (isSyncing) return;
-    isSyncing = true;
-    updateSyncStatus('syncing');
-    
-    try {
-        const payload = {
-            lastUpdated: new Date().toISOString(),
-            salvo: data.salvo,
-            elisa: data.elisa
-        };
-        
-        const response = await fetch(CONFIG.CLOUD_URL, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
-        
-        if (response.ok) {
-            updateSyncStatus('synced');
-            console.log('Saved to cloud');
-        } else {
-            throw new Error('Cloud save failed');
-        }
-    } catch (e) {
-        console.error('Cloud save error:', e);
-        updateSyncStatus('error');
-    }
-    
-    isSyncing = false;
 }
 
 function saveData() {
-    // Save locally first (instant)
-    localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(data));
+    // Save to localStorage (always works)
+    const payload = {
+        lastUpdated: new Date().toISOString(),
+        salvo: data.salvo,
+        elisa: data.elisa
+    };
+    localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(payload));
+    updateSyncStatus('saved');
     
-    // Then sync to cloud (async)
-    saveToCloud();
+    // Mark as needing sync
+    localStorage.setItem('fridgetracker_needs_sync', 'true');
 }
 
 function updateSyncStatus(status) {
@@ -158,23 +98,57 @@ function updateSyncStatus(status) {
     
     if (status === 'syncing') {
         el.innerHTML = '<span class="sync-icon">🔄</span><span class="sync-text">Syncing...</span>';
+    } else if (status === 'saved') {
+        el.innerHTML = '<span class="sync-icon">💾</span><span class="sync-text">Saved</span>';
+        // Fade to "local" after 2 seconds
+        setTimeout(() => updateSyncStatus('local'), 2000);
+    } else if (status === 'local') {
+        el.innerHTML = '<span class="sync-icon">📱</span><span class="sync-text">Local</span>';
     } else if (status === 'synced') {
         el.innerHTML = '<span class="sync-icon">☁️</span><span class="sync-text">Synced</span>';
     } else if (status === 'error') {
-        el.innerHTML = '<span class="sync-icon">⚠️</span><span class="sync-text">Offline</span>';
+        el.innerHTML = '<span class="sync-icon">📱</span><span class="sync-text">Offline</span>';
     }
 }
 
-// Manual sync button (pull to refresh alternative)
-async function manualSync() {
-    showToast('🔄 Syncing...', 'info');
-    const success = await loadFromCloud();
-    if (success) {
-        renderItems();
-        updateStats();
-        showToast('✅ Synced!', 'success');
+// Export data for MaryJane to sync
+function exportForSync() {
+    return JSON.stringify({
+        lastUpdated: new Date().toISOString(),
+        salvo: data.salvo,
+        elisa: data.elisa
+    }, null, 2);
+}
+
+// Import data from MaryJane sync
+function importFromSync(jsonData) {
+    try {
+        const imported = JSON.parse(jsonData);
+        if (imported.salvo && imported.elisa) {
+            data = { salvo: imported.salvo, elisa: imported.elisa };
+            saveData();
+            renderItems();
+            updateStats();
+            showToast('✅ Data imported!', 'success');
+            return true;
+        }
+    } catch (e) {
+        showToast('❌ Import failed', 'error');
+    }
+    return false;
+}
+
+// Manual sync to clipboard
+function manualSync() {
+    const jsonData = exportForSync();
+    
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(jsonData).then(() => {
+            showToast('📋 Data copied! Send to MaryJane to sync.', 'success');
+        });
     } else {
-        showToast('⚠️ Sync failed', 'error');
+        // Fallback - show in alert
+        prompt('Copy this data and send to MaryJane:', jsonData);
     }
 }
 
@@ -372,7 +346,7 @@ function updateExportButton() {
     }
 }
 
-// Export
+// Export for recipe
 function exportSelected() {
     const items = data[currentHouse][currentStorage].filter(i => selectedItems.has(i.id));
     
@@ -719,7 +693,7 @@ function showToast(message, type = 'info') {
     setTimeout(() => toast.remove(), 3000);
 }
 
-// Export functions for MaryJane integration
+// API for MaryJane
 function getExpiringItems(daysAhead = 2) {
     const result = { salvo: { fridge: [], pantry: [] }, elisa: { fridge: [], pantry: [] } };
     const today = new Date();
@@ -730,13 +704,15 @@ function getExpiringItems(daysAhead = 2) {
     
     for (const house of ['salvo', 'elisa']) {
         for (const storage of ['fridge', 'pantry']) {
-            result[house][storage] = data[house][storage].filter(item => {
-                const expiry = new Date(item.expiry);
-                return expiry <= threshold;
-            }).map(item => ({
-                ...item,
-                daysLeft: getDaysLeft(item.expiry)
-            }));
+            if (data[house] && data[house][storage]) {
+                result[house][storage] = data[house][storage].filter(item => {
+                    const expiry = new Date(item.expiry);
+                    return expiry <= threshold;
+                }).map(item => ({
+                    ...item,
+                    daysLeft: getDaysLeft(item.expiry)
+                }));
+            }
         }
     }
     
@@ -747,6 +723,8 @@ function getExpiringItems(daysAhead = 2) {
 window.FridgeTracker = {
     getData: () => data,
     getExpiringItems,
+    exportForSync,
+    importFromSync,
     manualSync,
     addItem: (house, storage, name, expiry, quantity = 1) => {
         const item = {
@@ -756,6 +734,8 @@ window.FridgeTracker = {
             quantity,
             addedAt: new Date().toISOString()
         };
+        if (!data[house]) data[house] = { fridge: [], pantry: [] };
+        if (!data[house][storage]) data[house][storage] = [];
         data[house][storage].push(item);
         saveData();
         if (house === currentHouse && storage === currentStorage) {
