@@ -1,7 +1,15 @@
 {
-  "lastUpdated": "2026-02-12T07:56:22.655Z",
+  "lastUpdated": "2026-02-12T08:20:30.558Z",
   "salvo": {
-    "fridge": [],
+    "fridge": [
+      {
+        "id": 1770884385112,
+        "name": "Hburger",
+        "expiry": "2026-02-12",
+        "quantity": 2,
+        "addedAt": "2026-02-12T08:19:45.112Z"
+      }
+    ],
     "pantry": []
   },
   "elisa": {
