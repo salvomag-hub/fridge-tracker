@@ -1,11 +1,32 @@
-// FridgeTracker - Main App Logic v6 (Real Cloud Sync!)
+// FridgeTracker - Main App Logic v7 (GitHub Sync - Secure!)
 
 // Configuration
 const CONFIG = {
     STORAGE_KEY: 'fridgetracker_data_v2',
-    CLOUD_URL: 'https://seems-losses-prepared-strategic.trycloudflare.com/fridge',
+    TOKEN_KEY: 'fridgetracker_github_token',
+    GITHUB_REPO: 'salvomag-hub/fridge-tracker',
+    GITHUB_FILE: 'data/fridge.json',
     OPEN_FOOD_FACTS_API: 'https://world.openfoodfacts.org/api/v0/product/'
 };
+
+// Get GitHub token from localStorage
+function getGitHubToken() {
+    return localStorage.getItem(CONFIG.TOKEN_KEY);
+}
+
+function setGitHubToken(token) {
+    localStorage.setItem(CONFIG.TOKEN_KEY, token);
+}
+
+function promptForToken() {
+    const token = prompt('🔑 Enter GitHub token for sync (get it from Salvo):');
+    if (token && token.startsWith('github_pat_')) {
+        setGitHubToken(token);
+        showToast('✅ Token saved!', 'success');
+        return token;
+    }
+    return null;
+}
 
 // Quick add presets
 const QUICK_ADD_PRESETS = {
@@ -58,14 +79,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('expiry-date').value = today;
 });
 
-// Cloud Sync
+// GitHub Sync
+let fileSha = null;
+
 async function loadFromCloud() {
     updateSyncStatus('syncing');
     try {
-        const response = await fetch(CONFIG.CLOUD_URL, {
-            method: 'GET',
-            headers: { 'Accept': 'application/json' }
-        });
+        // Read from raw.githubusercontent (public, no auth needed)
+        const timestamp = Date.now();
+        const response = await fetch(
+            `https://raw.githubusercontent.com/${CONFIG.GITHUB_REPO}/main/${CONFIG.GITHUB_FILE}?t=${timestamp}`
+        );
         
         if (response.ok) {
             const cloudData = await response.json();
@@ -74,21 +98,34 @@ async function loadFromCloud() {
                     salvo: cloudData.salvo,
                     elisa: cloudData.elisa
                 };
-                // Backup to localStorage
                 localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(data));
                 updateSyncStatus('synced');
-                console.log('✅ Loaded from cloud');
+                console.log('✅ Loaded from GitHub');
+                await getFileSha();
                 return true;
             }
         }
-        throw new Error('Cloud load failed');
+        throw new Error('GitHub load failed');
     } catch (e) {
-        console.error('Cloud error:', e);
-        // Fallback to localStorage
+        console.error('GitHub error:', e);
         loadFromLocal();
         updateSyncStatus('offline');
         return false;
     }
+}
+
+async function getFileSha() {
+    const token = getGitHubToken();
+    if (!token) return;
+    try {
+        const response = await fetch(
+            `https://api.github.com/repos/${CONFIG.GITHUB_REPO}/contents/${CONFIG.GITHUB_FILE}`,
+            { headers: { 'Authorization': `Bearer ${token}` } }
+        );
+        if (response.ok) {
+            fileSha = (await response.json()).sha;
+        }
+    } catch (e) { console.error('SHA error:', e); }
 }
 
 function loadFromLocal() {
@@ -107,33 +144,63 @@ function loadFromLocal() {
 
 async function saveToCloud() {
     if (isSyncing) return;
+    
+    let token = getGitHubToken();
+    if (!token) {
+        token = promptForToken();
+        if (!token) {
+            updateSyncStatus('offline');
+            return;
+        }
+    }
+    
     isSyncing = true;
     updateSyncStatus('syncing');
     
     try {
+        if (!fileSha) await getFileSha();
+        
         const payload = {
             lastUpdated: new Date().toISOString(),
             salvo: data.salvo,
             elisa: data.elisa
         };
         
-        const response = await fetch(CONFIG.CLOUD_URL, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
+        const content = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
+        
+        const response = await fetch(
+            `https://api.github.com/repos/${CONFIG.GITHUB_REPO}/contents/${CONFIG.GITHUB_FILE}`,
+            {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: `Sync ${new Date().toLocaleString()}`,
+                    content: content,
+                    sha: fileSha
+                })
+            }
+        );
         
         if (response.ok) {
+            fileSha = (await response.json()).content.sha;
             updateSyncStatus('synced');
-            console.log('✅ Saved to cloud');
+            console.log('✅ Saved to GitHub');
+        } else if (response.status === 409) {
+            await getFileSha();
+            isSyncing = false;
+            return saveToCloud();
+        } else if (response.status === 401) {
+            localStorage.removeItem(CONFIG.TOKEN_KEY);
+            showToast('❌ Invalid token', 'error');
+            updateSyncStatus('offline');
         } else {
             throw new Error('Save failed');
         }
     } catch (e) {
-        console.error('Cloud save error:', e);
+        console.error('GitHub save error:', e);
         updateSyncStatus('offline');
     }
     
