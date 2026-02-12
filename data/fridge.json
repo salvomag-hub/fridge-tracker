@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-12T08:27:52.934Z",
+  "lastUpdated": "2026-02-12T08:28:02.183Z",
   "salvo": {
     "fridge": [
       {
@@ -22,6 +22,13 @@
         "expiry": "2026-02-26",
         "quantity": 1,
         "addedAt": "2026-02-12T08:27:52.933Z"
+      },
+      {
+        "id": 1770884882183,
+        "name": "Butter",
+        "expiry": "2026-03-14",
+        "quantity": 1,
+        "addedAt": "2026-02-12T08:28:02.183Z"
       }
     ],
     "pantry": []
