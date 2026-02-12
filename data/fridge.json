@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-12T10:19:41.661Z",
+  "lastUpdated": "2026-02-12T10:19:51.853Z",
   "salvo": {
     "fridge": [
       {
@@ -92,6 +92,13 @@
         "expiry": "2026-02-13",
         "quantity": 2,
         "addedAt": "2026-02-12T10:19:41.660Z"
+      },
+      {
+        "id": 1770891591853,
+        "name": "Salsicce",
+        "expiry": "2026-02-13",
+        "quantity": 2,
+        "addedAt": "2026-02-12T10:19:51.853Z"
       }
     ],
     "pantry": []
