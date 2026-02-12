@@ -1,14 +1,7 @@
 {
-  "lastUpdated": "2026-02-12T08:28:02.183Z",
+  "lastUpdated": "2026-02-12T10:10:33.756Z",
   "salvo": {
     "fridge": [
-      {
-        "id": 1770884449991,
-        "name": "Milk",
-        "expiry": "2026-02-19",
-        "quantity": 1,
-        "addedAt": "2026-02-12T08:20:49.991Z"
-      },
       {
         "id": 1770884689202,
         "name": "Yogurt",
