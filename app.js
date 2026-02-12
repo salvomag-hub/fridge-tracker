@@ -120,10 +120,15 @@ let fileSha = null;
 async function loadFromCloud() {
     updateSyncStatus('syncing');
     try {
-        // Read from raw.githubusercontent (public, no auth needed)
-        const timestamp = Date.now();
+        // Use GitHub API for reading (no cache issues)
         const response = await fetch(
-            `https://raw.githubusercontent.com/${CONFIG.GITHUB_REPO}/main/${CONFIG.GITHUB_FILE}?t=${timestamp}`
+            `https://api.github.com/repos/${CONFIG.GITHUB_REPO}/contents/${CONFIG.GITHUB_FILE}`,
+            { 
+                headers: { 
+                    'Accept': 'application/vnd.github.v3.raw',
+                    'Cache-Control': 'no-cache'
+                } 
+            }
         );
         
         if (response.ok) {
