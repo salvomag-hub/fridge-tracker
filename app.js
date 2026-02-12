@@ -227,20 +227,34 @@ async function saveToCloud() {
         if (response.ok) {
             fileSha = (await response.json()).content.sha;
             updateSyncStatus('synced');
+            showToast('✅ Salvato!', 'success');
             console.log('✅ Saved to GitHub');
         } else if (response.status === 409) {
+            console.log('SHA conflict, retrying...');
+            fileSha = null;
             await getFileSha();
             isSyncing = false;
             return saveToCloud();
         } else if (response.status === 401) {
             localStorage.removeItem(CONFIG.TOKEN_KEY);
-            showToast('❌ Invalid token', 'error');
+            showToast('❌ Token non valido!', 'error');
             updateSyncStatus('offline');
+        } else if (response.status === 422) {
+            // SHA mismatch - refetch and retry
+            console.log('SHA mismatch, refetching...');
+            fileSha = null;
+            await getFileSha();
+            isSyncing = false;
+            return saveToCloud();
         } else {
+            const errBody = await response.text();
+            console.error('Save error:', response.status, errBody);
+            showToast(`❌ Errore salvataggio: ${response.status}`, 'error');
             throw new Error('Save failed');
         }
     } catch (e) {
         console.error('GitHub save error:', e);
+        showToast('❌ Errore sync!', 'error');
         updateSyncStatus('offline');
     }
     
