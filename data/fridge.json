@@ -1,22 +1,7 @@
 {
-  "lastUpdated": "2026-02-12T10:10:35.187Z",
+  "lastUpdated": "2026-02-12T10:10:36.320Z",
   "salvo": {
-    "fridge": [
-      {
-        "id": 1770884689202,
-        "name": "Yogurt",
-        "expiry": "2026-03-05",
-        "quantity": 1,
-        "addedAt": "2026-02-12T08:24:49.202Z"
-      },
-      {
-        "id": 1770884882183,
-        "name": "Butter",
-        "expiry": "2026-03-14",
-        "quantity": 1,
-        "addedAt": "2026-02-12T08:28:02.183Z"
-      }
-    ],
+    "fridge": [],
     "pantry": []
   },
   "elisa": {
