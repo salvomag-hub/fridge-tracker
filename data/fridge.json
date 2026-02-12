@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-12T10:18:02.677Z",
+  "lastUpdated": "2026-02-12T10:18:36.393Z",
   "salvo": {
     "fridge": [
       {
@@ -71,6 +71,13 @@
         "expiry": "2026-02-13",
         "quantity": 1,
         "addedAt": "2026-02-12T10:18:02.677Z"
+      },
+      {
+        "id": 1770891516392,
+        "name": "Latte condensato zuccherato",
+        "expiry": "2026-10-04",
+        "quantity": 1,
+        "addedAt": "2026-02-12T10:18:36.392Z"
       }
     ],
     "pantry": []
