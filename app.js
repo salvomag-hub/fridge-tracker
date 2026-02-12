@@ -1,9 +1,9 @@
-// FridgeTracker - Main App Logic v5 (Offline-first + Cloud backup)
+// FridgeTracker - Main App Logic v6 (Real Cloud Sync!)
 
 // Configuration
 const CONFIG = {
     STORAGE_KEY: 'fridgetracker_data_v2',
-    CLOUD_URL: 'https://jsonblob.com/api/jsonBlob/019c4eeb-fc44-7bb8-886e-9deab33dfff9',
+    CLOUD_URL: 'http://135.181.151.19:8081/fridge',
     OPEN_FOOD_FACTS_API: 'https://world.openfoodfacts.org/api/v0/product/'
 };
 
@@ -37,6 +37,7 @@ let currentStorage = 'fridge';
 let currentFilter = 'all';
 let selectedItems = new Set();
 let html5QrcodeScanner = null;
+let isSyncing = false;
 
 let data = {
     salvo: { fridge: [], pantry: [] },
@@ -44,112 +45,133 @@ let data = {
 };
 
 // Initialize app
-document.addEventListener('DOMContentLoaded', () => {
-    loadData();
+document.addEventListener('DOMContentLoaded', async () => {
+    // Load from cloud first
+    await loadFromCloud();
+    
     renderQuickAddButtons();
     renderItems();
     updateStats();
-    updateSyncStatus('local');
     
     // Set default date to today
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('expiry-date').value = today;
 });
 
-// Data Management - Offline First
-function loadData() {
+// Cloud Sync
+async function loadFromCloud() {
+    updateSyncStatus('syncing');
+    try {
+        const response = await fetch(CONFIG.CLOUD_URL, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' }
+        });
+        
+        if (response.ok) {
+            const cloudData = await response.json();
+            if (cloudData.salvo && cloudData.elisa) {
+                data = {
+                    salvo: cloudData.salvo,
+                    elisa: cloudData.elisa
+                };
+                // Backup to localStorage
+                localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(data));
+                updateSyncStatus('synced');
+                console.log('✅ Loaded from cloud');
+                return true;
+            }
+        }
+        throw new Error('Cloud load failed');
+    } catch (e) {
+        console.error('Cloud error:', e);
+        // Fallback to localStorage
+        loadFromLocal();
+        updateSyncStatus('offline');
+        return false;
+    }
+}
+
+function loadFromLocal() {
     const saved = localStorage.getItem(CONFIG.STORAGE_KEY);
     if (saved) {
         try {
             const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed.salvo)) {
-                // Migrate old format
-                data = {
-                    salvo: { fridge: parsed.salvo, pantry: [] },
-                    elisa: { fridge: parsed.elisa, pantry: [] }
-                };
-            } else if (parsed.salvo && parsed.elisa) {
+            if (parsed.salvo && parsed.elisa) {
                 data = parsed;
             }
-            console.log('Loaded from localStorage:', data);
         } catch (e) {
-            console.error('Error loading data:', e);
+            console.error('Local load error:', e);
         }
     }
 }
 
-function saveData() {
-    // Save to localStorage (always works)
-    const payload = {
-        lastUpdated: new Date().toISOString(),
-        salvo: data.salvo,
-        elisa: data.elisa
-    };
-    localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(payload));
-    updateSyncStatus('saved');
+async function saveToCloud() {
+    if (isSyncing) return;
+    isSyncing = true;
+    updateSyncStatus('syncing');
     
-    // Mark as needing sync
-    localStorage.setItem('fridgetracker_needs_sync', 'true');
+    try {
+        const payload = {
+            lastUpdated: new Date().toISOString(),
+            salvo: data.salvo,
+            elisa: data.elisa
+        };
+        
+        const response = await fetch(CONFIG.CLOUD_URL, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        if (response.ok) {
+            updateSyncStatus('synced');
+            console.log('✅ Saved to cloud');
+        } else {
+            throw new Error('Save failed');
+        }
+    } catch (e) {
+        console.error('Cloud save error:', e);
+        updateSyncStatus('offline');
+    }
+    
+    isSyncing = false;
+}
+
+function saveData() {
+    // Save locally first (instant)
+    localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(data));
+    // Then sync to cloud
+    saveToCloud();
 }
 
 function updateSyncStatus(status) {
     const el = document.getElementById('sync-status');
     el.className = 'sync-status ' + status;
     
-    if (status === 'syncing') {
-        el.innerHTML = '<span class="sync-icon">🔄</span><span class="sync-text">Syncing...</span>';
-    } else if (status === 'saved') {
-        el.innerHTML = '<span class="sync-icon">💾</span><span class="sync-text">Saved</span>';
-        // Fade to "local" after 2 seconds
-        setTimeout(() => updateSyncStatus('local'), 2000);
-    } else if (status === 'local') {
-        el.innerHTML = '<span class="sync-icon">📱</span><span class="sync-text">Local</span>';
-    } else if (status === 'synced') {
-        el.innerHTML = '<span class="sync-icon">☁️</span><span class="sync-text">Synced</span>';
-    } else if (status === 'error') {
-        el.innerHTML = '<span class="sync-icon">📱</span><span class="sync-text">Offline</span>';
-    }
-}
-
-// Export data for MaryJane to sync
-function exportForSync() {
-    return JSON.stringify({
-        lastUpdated: new Date().toISOString(),
-        salvo: data.salvo,
-        elisa: data.elisa
-    }, null, 2);
-}
-
-// Import data from MaryJane sync
-function importFromSync(jsonData) {
-    try {
-        const imported = JSON.parse(jsonData);
-        if (imported.salvo && imported.elisa) {
-            data = { salvo: imported.salvo, elisa: imported.elisa };
-            saveData();
-            renderItems();
-            updateStats();
-            showToast('✅ Data imported!', 'success');
-            return true;
-        }
-    } catch (e) {
-        showToast('❌ Import failed', 'error');
-    }
-    return false;
-}
-
-// Manual sync to clipboard
-function manualSync() {
-    const jsonData = exportForSync();
+    const icons = {
+        syncing: '🔄',
+        synced: '☁️',
+        offline: '📱'
+    };
+    const texts = {
+        syncing: 'Syncing...',
+        synced: 'Synced',
+        offline: 'Offline'
+    };
     
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(jsonData).then(() => {
-            showToast('📋 Data copied! Send to MaryJane to sync.', 'success');
-        });
-    } else {
-        // Fallback - show in alert
-        prompt('Copy this data and send to MaryJane:', jsonData);
-    }
+    el.innerHTML = `<span class="sync-icon">${icons[status] || '📱'}</span><span class="sync-text">${texts[status] || 'Local'}</span>`;
+}
+
+// Manual sync
+async function manualSync() {
+    showToast('🔄 Syncing...', 'info');
+    const success = await loadFromCloud();
+    renderItems();
+    updateStats();
+    showToast(success ? '✅ Synced!' : '⚠️ Offline mode', success ? 'success' : 'error');
 }
 
 // House Selection
@@ -165,7 +187,7 @@ function selectHouse(house) {
     updateExportButton();
 }
 
-// Storage Selection (Fridge/Pantry)
+// Storage Selection
 function selectStorage(storage) {
     currentStorage = storage;
     selectedItems.clear();
@@ -173,14 +195,10 @@ function selectStorage(storage) {
     document.querySelectorAll('.storage-tab').forEach(tab => tab.classList.remove('active'));
     document.getElementById(`tab-${storage}`).classList.add('active');
     
-    if (storage === 'pantry') {
-        document.body.classList.add('pantry-mode');
-    } else {
-        document.body.classList.remove('pantry-mode');
-    }
+    document.body.classList.toggle('pantry-mode', storage === 'pantry');
     
-    const title = document.getElementById('items-title');
-    title.textContent = storage === 'fridge' ? '📦 In the Fridge' : '📦 In the Pantry';
+    document.getElementById('items-title').textContent = 
+        storage === 'fridge' ? '📦 In the Fridge' : '📦 In the Pantry';
     
     renderQuickAddButtons();
     renderItems();
@@ -188,7 +206,7 @@ function selectStorage(storage) {
     updateExportButton();
 }
 
-// Quick Add Buttons
+// Quick Add
 function renderQuickAddButtons() {
     const container = document.getElementById('quick-buttons');
     const presets = QUICK_ADD_PRESETS[currentStorage];
@@ -202,7 +220,7 @@ function renderQuickAddButtons() {
 
 function openQuickAddModal(name, days) {
     document.getElementById('quick-product-name').value = name;
-    document.getElementById('quick-edit-label').textContent = `${name}`;
+    document.getElementById('quick-edit-label').textContent = name;
     document.getElementById('quick-days').value = days;
     document.getElementById('quick-edit-modal').classList.remove('hidden');
 }
@@ -320,7 +338,7 @@ function deleteItem(id, event) {
     showToast('🗑️ Removed', 'success');
 }
 
-// Selection for Export
+// Selection
 function toggleSelection(id, event) {
     event.stopPropagation();
     
@@ -338,15 +356,11 @@ function updateExportButton() {
     const btn = document.getElementById('export-btn');
     const count = document.getElementById('selected-count');
     
-    if (selectedItems.size > 0) {
-        btn.classList.remove('hidden');
-        count.textContent = selectedItems.size;
-    } else {
-        btn.classList.add('hidden');
-    }
+    btn.classList.toggle('hidden', selectedItems.size === 0);
+    count.textContent = selectedItems.size;
 }
 
-// Export for recipe
+// Export
 function exportSelected() {
     const items = data[currentHouse][currentStorage].filter(i => selectedItems.has(i.id));
     
@@ -355,16 +369,13 @@ function exportSelected() {
         return;
     }
     
-    const storageName = currentStorage === 'fridge' ? 'fridge' : 'pantry';
+    const storageName = currentStorage;
     const houseName = currentHouse === 'salvo' ? "Salvo's" : "Elisa's";
     
     let text = `🍳 I have these ingredients (${houseName} ${storageName}):\n\n`;
     items.forEach(item => {
         const daysLeft = getDaysLeft(item.expiry);
-        let status = '';
-        if (daysLeft < 0) status = ' ⚠️ EXPIRED';
-        else if (daysLeft <= 2) status = ' ⚠️ expiring soon';
-        
+        let status = daysLeft < 0 ? ' ⚠️ EXPIRED' : daysLeft <= 2 ? ' ⚠️ expiring soon' : '';
         text += `• ${item.name} (x${item.quantity})${status}\n`;
     });
     text += `\nWhat can I cook?`;
@@ -379,26 +390,19 @@ function closeExportModal() {
 
 function copyExport() {
     const text = document.getElementById('export-text').value;
-    
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(text).then(() => {
-            showToast('📋 Copied!', 'success');
-            closeExportModal();
-            selectedItems.clear();
-            renderItems();
-            updateExportButton();
-        });
-    } else {
-        document.getElementById('export-text').select();
-        document.execCommand('copy');
+    navigator.clipboard?.writeText(text).then(() => {
         showToast('📋 Copied!', 'success');
-    }
+        closeExportModal();
+        selectedItems.clear();
+        renderItems();
+        updateExportButton();
+    }) || (document.getElementById('export-text').select(), document.execCommand('copy'), showToast('📋 Copied!', 'success'));
 }
 
-// Render Items
+// Render
 function renderItems() {
     const container = document.getElementById('items-list');
-    let items = [...data[currentHouse][currentStorage]];
+    let items = [...(data[currentHouse]?.[currentStorage] || [])];
     
     items.sort((a, b) => new Date(a.expiry) - new Date(b.expiry));
     
@@ -406,56 +410,36 @@ function renderItems() {
     today.setHours(0, 0, 0, 0);
     
     if (currentFilter === 'expiring') {
-        const twoDaysFromNow = new Date(today);
-        twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
+        const threshold = new Date(today);
+        threshold.setDate(threshold.getDate() + 2);
         items = items.filter(item => {
-            const expiry = new Date(item.expiry);
-            return expiry >= today && expiry <= twoDaysFromNow;
+            const exp = new Date(item.expiry);
+            return exp >= today && exp <= threshold;
         });
     } else if (currentFilter === 'expired') {
         items = items.filter(item => new Date(item.expiry) < today);
     }
     
     if (items.length === 0) {
-        const emptyIcon = currentStorage === 'fridge' ? '🧊' : '🗄️';
-        const emptyText = currentFilter === 'all' 
-            ? `No items in the ${currentStorage}` 
-            : 'No items in this category';
         container.innerHTML = `
             <div class="empty-state">
-                <div class="icon">${emptyIcon}</div>
-                <p>${emptyText}</p>
-            </div>
-        `;
+                <div class="icon">${currentStorage === 'fridge' ? '🧊' : '🗄️'}</div>
+                <p>${currentFilter === 'all' ? `No items in the ${currentStorage}` : 'No items in this category'}</p>
+            </div>`;
         return;
     }
     
     container.innerHTML = items.map(item => {
         const daysLeft = getDaysLeft(item.expiry);
-        
-        let statusClass = '';
-        let expiryText = '';
-        
-        if (daysLeft < 0) {
-            statusClass = 'expired';
-            expiryText = `Expired ${Math.abs(daysLeft)} day${Math.abs(daysLeft) === 1 ? '' : 's'} ago`;
-        } else if (daysLeft === 0) {
-            statusClass = 'expiring';
-            expiryText = 'Expires TODAY!';
-        } else if (daysLeft <= 2) {
-            statusClass = 'expiring';
-            expiryText = `Expires in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`;
-        } else {
-            expiryText = `Expires ${formatDate(item.expiry)}`;
-        }
-        
-        const isSelected = selectedItems.has(item.id);
+        const statusClass = daysLeft < 0 ? 'expired' : daysLeft <= 2 ? 'expiring' : '';
+        const expiryText = daysLeft < 0 ? `Expired ${Math.abs(daysLeft)} day${Math.abs(daysLeft) === 1 ? '' : 's'} ago`
+            : daysLeft === 0 ? 'Expires TODAY!'
+            : daysLeft <= 2 ? `Expires in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`
+            : `Expires ${formatDate(item.expiry)}`;
         
         return `
-            <div class="item-card ${statusClass} ${isSelected ? 'selected' : ''}" onclick="openEditModal(${item.id})">
-                <input type="checkbox" class="item-checkbox" 
-                    ${isSelected ? 'checked' : ''} 
-                    onclick="toggleSelection(${item.id}, event)">
+            <div class="item-card ${statusClass} ${selectedItems.has(item.id) ? 'selected' : ''}" onclick="openEditModal(${item.id})">
+                <input type="checkbox" class="item-checkbox" ${selectedItems.has(item.id) ? 'checked' : ''} onclick="toggleSelection(${item.id}, event)">
                 <div class="item-info">
                     <div class="item-name">${escapeHtml(item.name)}</div>
                     <div class="item-expiry ${statusClass}">${expiryText}</div>
@@ -465,67 +449,48 @@ function renderItems() {
                     <button class="item-edit" onclick="openEditModal(${item.id}); event.stopPropagation();">✏️</button>
                     <button class="item-delete" onclick="deleteItem(${item.id}, event)">🗑️</button>
                 </div>
-            </div>
-        `;
+            </div>`;
     }).join('');
 }
 
 function getDaysLeft(expiryDate) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const expiry = new Date(expiryDate);
-    return Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+    return Math.ceil((new Date(expiryDate) - today) / (1000 * 60 * 60 * 24));
 }
 
-// Update Stats
 function updateStats() {
-    const items = data[currentHouse][currentStorage];
+    const items = data[currentHouse]?.[currentStorage] || [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const threshold = new Date(today);
+    threshold.setDate(threshold.getDate() + 2);
     
-    const twoDaysFromNow = new Date(today);
-    twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
-    
-    const total = items.length;
-    const expiring = items.filter(item => {
-        const expiry = new Date(item.expiry);
-        return expiry >= today && expiry <= twoDaysFromNow;
+    document.getElementById('total-items').textContent = items.length;
+    document.getElementById('expiring-soon').textContent = items.filter(i => {
+        const exp = new Date(i.expiry);
+        return exp >= today && exp <= threshold;
     }).length;
-    const expired = items.filter(item => new Date(item.expiry) < today).length;
-    
-    document.getElementById('total-items').textContent = total;
-    document.getElementById('expiring-soon').textContent = expiring;
-    document.getElementById('expired-items').textContent = expired;
+    document.getElementById('expired-items').textContent = items.filter(i => new Date(i.expiry) < today).length;
 }
 
-// Filter Items
 function filterItems(filter) {
     currentFilter = filter;
-    
     document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
-    
     renderItems();
 }
 
 // Barcode Scanner
 function startBarcodeScanner() {
-    const container = document.getElementById('scanner-container');
-    container.classList.remove('hidden');
-    
+    document.getElementById('scanner-container').classList.remove('hidden');
     html5QrcodeScanner = new Html5Qrcode("scanner-view");
-    
     html5QrcodeScanner.start(
         { facingMode: "environment" },
-        {
-            fps: 10,
-            qrbox: { width: 250, height: 150 },
-            aspectRatio: 1.777
-        },
+        { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1.777 },
         onBarcodeScanned,
-        (errorMessage) => {}
+        () => {}
     ).catch(err => {
-        console.error("Scanner error:", err);
         showToast('Camera access error', 'error');
         closeScanner();
     });
@@ -533,43 +498,32 @@ function startBarcodeScanner() {
 
 async function onBarcodeScanned(barcode) {
     closeScanner();
-    showToast('🔍 Looking up product...', 'success');
-    
+    showToast('🔍 Looking up...', 'success');
     try {
-        const response = await fetch(`${CONFIG.OPEN_FOOD_FACTS_API}${barcode}.json`);
-        const result = await response.json();
-        
+        const res = await fetch(`${CONFIG.OPEN_FOOD_FACTS_API}${barcode}.json`);
+        const result = await res.json();
         if (result.status === 1 && result.product) {
-            const product = result.product;
-            const name = product.product_name || product.product_name_en || 'Unknown product';
-            
+            const name = result.product.product_name || result.product.product_name_en || 'Unknown';
             document.getElementById('product-name').value = name;
             showToast(`✅ Found: ${name}`, 'success');
             document.getElementById('expiry-date').focus();
         } else {
             showToast('Product not found', 'error');
-            document.getElementById('product-name').focus();
         }
     } catch (e) {
-        console.error('Error looking up barcode:', e);
         showToast('Lookup error', 'error');
     }
 }
 
 function closeScanner() {
-    const container = document.getElementById('scanner-container');
-    container.classList.add('hidden');
-    
-    if (html5QrcodeScanner) {
-        html5QrcodeScanner.stop().catch(err => console.log('Scanner stop error:', err));
-        html5QrcodeScanner = null;
-    }
+    document.getElementById('scanner-container').classList.add('hidden');
+    html5QrcodeScanner?.stop().catch(() => {});
+    html5QrcodeScanner = null;
 }
 
-// OCR Scanner
+// OCR
 function startOCRScanner() {
-    const container = document.getElementById('ocr-container');
-    container.classList.remove('hidden');
+    document.getElementById('ocr-container').classList.remove('hidden');
     document.getElementById('ocr-input').click();
 }
 
@@ -581,41 +535,27 @@ async function processOCR(event) {
     const status = document.getElementById('ocr-status');
     
     const reader = new FileReader();
-    reader.onload = (e) => {
-        preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
-    };
+    reader.onload = e => { preview.innerHTML = `<img src="${e.target.result}">`; };
     reader.readAsDataURL(file);
     
-    status.textContent = '🔍 Analyzing image...';
+    status.textContent = '🔍 Analyzing...';
     status.classList.add('visible');
     
     try {
         const result = await Tesseract.recognize(file, 'eng+ita', {
-            logger: m => {
-                if (m.status === 'recognizing text') {
-                    status.textContent = `🔍 Analyzing: ${Math.round(m.progress * 100)}%`;
-                }
-            }
+            logger: m => { if (m.status === 'recognizing text') status.textContent = `🔍 ${Math.round(m.progress * 100)}%`; }
         });
-        
-        const text = result.data.text;
-        const dateMatch = extractDate(text);
-        
+        const dateMatch = extractDate(result.data.text);
         if (dateMatch) {
             document.getElementById('expiry-date').value = dateMatch;
-            status.textContent = `✅ Found date: ${formatDate(dateMatch)}`;
+            status.textContent = `✅ Found: ${formatDate(dateMatch)}`;
             showToast('Date detected!', 'success');
         } else {
             status.textContent = '⚠️ No date found';
-            showToast('Date not found', 'error');
         }
-        
         setTimeout(closeOCR, 2000);
-        
     } catch (e) {
-        console.error('OCR error:', e);
-        status.textContent = '❌ Analysis error';
-        showToast('OCR error', 'error');
+        status.textContent = '❌ Error';
     }
 }
 
@@ -623,125 +563,49 @@ function extractDate(text) {
     const patterns = [
         /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](20\d{2})/,
         /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2})/,
-        /(0?[1-9]|1[0-2])[\/\-\.](\d{1,2})[\/\-\.](20\d{2})/,
-        /(?:exp|best\s*before|use\s*by)[:\s]*(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/i,
-        /(\d{1,2})\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*(20\d{2}|\d{2})/i,
-        /(\d{1,2})\s*(gen|feb|mar|apr|mag|giu|lug|ago|set|ott|nov|dic)[a-z]*\s*(20\d{2}|\d{2})/i
+        /(\d{1,2})\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|gen|mag|giu|lug|ago|set|ott|dic)[a-z]*\s*(20\d{2}|\d{2})/i
     ];
-    
-    for (const pattern of patterns) {
-        const match = text.match(pattern);
-        if (match) {
-            let day, month, year;
-            
-            if (match[2].match && match[2].match(/[a-z]/i)) {
-                day = parseInt(match[1]);
-                month = getMonthNumber(match[2]);
-                year = match[3].length === 2 ? 2000 + parseInt(match[3]) : parseInt(match[3]);
-            } else {
-                day = parseInt(match[1]);
-                month = parseInt(match[2]);
-                year = match[3].length === 2 ? 2000 + parseInt(match[3]) : parseInt(match[3]);
-            }
-            
-            if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
-                return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            }
+    for (const p of patterns) {
+        const m = text.match(p);
+        if (m) {
+            let [_, d, mo, y] = m;
+            if (mo.match?.(/[a-z]/i)) mo = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12,gen:1,mag:5,giu:6,lug:7,ago:8,set:9,ott:10,dic:12}[mo.slice(0,3).toLowerCase()];
+            y = y.length === 2 ? 2000 + +y : +y;
+            if (+d >= 1 && +d <= 31 && +mo >= 1 && +mo <= 12) return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
         }
     }
-    
     return null;
 }
 
-function getMonthNumber(monthName) {
-    const months = {
-        'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
-        'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12,
-        'gen': 1, 'mag': 5, 'giu': 6, 'lug': 7, 'ago': 8, 'set': 9, 'ott': 10, 'dic': 12
-    };
-    return months[monthName.toLowerCase().substring(0, 3)] || 1;
-}
-
 function closeOCR() {
-    const container = document.getElementById('ocr-container');
-    container.classList.add('hidden');
+    document.getElementById('ocr-container').classList.add('hidden');
     document.getElementById('ocr-preview').innerHTML = '';
     document.getElementById('ocr-status').classList.remove('visible');
     document.getElementById('ocr-input').value = '';
 }
 
-// Utility Functions
-function formatDate(dateStr) {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-function showToast(message, type = 'info') {
+// Utils
+const formatDate = d => new Date(d).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+const escapeHtml = t => { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; };
+const showToast = (msg, type = 'info') => {
     document.querySelectorAll('.toast').forEach(t => t.remove());
-    
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.textContent = message;
+    toast.textContent = msg;
     document.body.appendChild(toast);
-    
     setTimeout(() => toast.remove(), 3000);
-}
+};
 
-// API for MaryJane
-function getExpiringItems(daysAhead = 2) {
-    const result = { salvo: { fridge: [], pantry: [] }, elisa: { fridge: [], pantry: [] } };
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const threshold = new Date(today);
-    threshold.setDate(threshold.getDate() + daysAhead);
-    
-    for (const house of ['salvo', 'elisa']) {
-        for (const storage of ['fridge', 'pantry']) {
-            if (data[house] && data[house][storage]) {
-                result[house][storage] = data[house][storage].filter(item => {
-                    const expiry = new Date(item.expiry);
-                    return expiry <= threshold;
-                }).map(item => ({
-                    ...item,
-                    daysLeft: getDaysLeft(item.expiry)
-                }));
-            }
-        }
-    }
-    
-    return result;
-}
-
-// Global API
+// API
 window.FridgeTracker = {
     getData: () => data,
-    getExpiringItems,
-    exportForSync,
-    importFromSync,
     manualSync,
-    addItem: (house, storage, name, expiry, quantity = 1) => {
-        const item = {
-            id: Date.now(),
-            name,
-            expiry,
-            quantity,
-            addedAt: new Date().toISOString()
-        };
-        if (!data[house]) data[house] = { fridge: [], pantry: [] };
-        if (!data[house][storage]) data[house][storage] = [];
-        data[house][storage].push(item);
-        saveData();
-        if (house === currentHouse && storage === currentStorage) {
-            renderItems();
-            updateStats();
-        }
-        return item;
+    getExpiringItems: (days = 2) => {
+        const result = { salvo: { fridge: [], pantry: [] }, elisa: { fridge: [], pantry: [] } };
+        const today = new Date(); today.setHours(0,0,0,0);
+        const threshold = new Date(today); threshold.setDate(threshold.getDate() + days);
+        for (const h of ['salvo', 'elisa']) for (const s of ['fridge', 'pantry'])
+            result[h][s] = (data[h]?.[s] || []).filter(i => new Date(i.expiry) <= threshold).map(i => ({ ...i, daysLeft: getDaysLeft(i.expiry) }));
+        return result;
     }
 };
