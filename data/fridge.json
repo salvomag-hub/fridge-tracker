@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-14T15:20:16.662Z",
+  "lastUpdated": "2026-02-14T15:20:47.934Z",
   "salvo": {
     "fridge": [
       {
@@ -87,6 +87,14 @@
         "quantity": 4,
         "grams": null,
         "addedAt": "2026-02-14T15:20:16.661Z"
+      },
+      {
+        "id": 1771082447933,
+        "name": "Latte di soia",
+        "expiry": "2026-02-19",
+        "quantity": 1,
+        "grams": 200,
+        "addedAt": "2026-02-14T15:20:47.933Z"
       }
     ],
     "pantry": [
