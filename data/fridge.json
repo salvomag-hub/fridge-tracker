@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-14T09:04:03.339Z",
+  "lastUpdated": "2026-02-14T09:04:40.348Z",
   "salvo": {
     "fridge": [
       {
@@ -83,6 +83,13 @@
         "expiry": "2026-02-20",
         "quantity": 1,
         "addedAt": "2026-02-14T09:04:03.338Z"
+      },
+      {
+        "id": 1771059880347,
+        "name": "Cherry tomatoes",
+        "expiry": "2026-02-15",
+        "quantity": 1,
+        "addedAt": "2026-02-14T09:04:40.347Z"
       }
     ],
     "pantry": []
