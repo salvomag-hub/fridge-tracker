@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-14T05:47:42.456Z",
+  "lastUpdated": "2026-02-14T05:47:50.700Z",
   "salvo": {
     "fridge": [
       {
@@ -41,7 +41,7 @@
         "id": 1770891421237,
         "name": "Carote",
         "expiry": "2026-02-19",
-        "quantity": 6,
+        "quantity": 4,
         "addedAt": "2026-02-12T10:17:01.237Z"
       },
       {
