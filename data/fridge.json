@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-14T15:18:39.651Z",
+  "lastUpdated": "2026-02-14T15:20:16.662Z",
   "salvo": {
     "fridge": [
       {
@@ -79,6 +79,14 @@
         "expiry": "2026-03-03",
         "quantity": 1,
         "addedAt": "2026-02-14T10:42:17.033Z"
+      },
+      {
+        "id": 1771082416661,
+        "name": "Salsicce fresche",
+        "expiry": "2026-02-18",
+        "quantity": 4,
+        "grams": null,
+        "addedAt": "2026-02-14T15:20:16.661Z"
       }
     ],
     "pantry": [
