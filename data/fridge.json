@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-14T09:04:40.348Z",
+  "lastUpdated": "2026-02-14T10:40:30.302Z",
   "salvo": {
     "fridge": [
       {
@@ -64,6 +64,13 @@
         "expiry": "2026-08-01",
         "quantity": 1,
         "addedAt": "2026-02-12T10:19:13.491Z"
+      },
+      {
+        "id": 1771065630301,
+        "name": "Soffritto",
+        "expiry": "2027-12-04",
+        "quantity": 1,
+        "addedAt": "2026-02-14T10:40:30.301Z"
       }
     ],
     "pantry": []
