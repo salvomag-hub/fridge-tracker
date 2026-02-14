@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-14T05:47:58.119Z",
+  "lastUpdated": "2026-02-14T09:03:28.214Z",
   "salvo": {
     "fridge": [
       {
@@ -69,7 +69,15 @@
     "pantry": []
   },
   "elisa": {
-    "fridge": [],
+    "fridge": [
+      {
+        "id": 1771059808213,
+        "name": "Peas 🫛",
+        "expiry": "2026-02-17",
+        "quantity": 1,
+        "addedAt": "2026-02-14T09:03:28.213Z"
+      }
+    ],
     "pantry": []
   }
 }
