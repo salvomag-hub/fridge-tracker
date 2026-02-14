@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-14T10:41:31.813Z",
+  "lastUpdated": "2026-02-14T10:42:17.033Z",
   "salvo": {
     "fridge": [
       {
@@ -78,6 +78,13 @@
         "expiry": "2026-06-04",
         "quantity": 1,
         "addedAt": "2026-02-14T10:41:31.813Z"
+      },
+      {
+        "id": 1771065737033,
+        "name": "Tortelli ricotta e spinaci",
+        "expiry": "2026-03-03",
+        "quantity": 1,
+        "addedAt": "2026-02-14T10:42:17.033Z"
       }
     ],
     "pantry": []
