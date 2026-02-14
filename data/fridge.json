@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-14T09:03:28.214Z",
+  "lastUpdated": "2026-02-14T09:04:03.339Z",
   "salvo": {
     "fridge": [
       {
@@ -76,6 +76,13 @@
         "expiry": "2026-02-17",
         "quantity": 1,
         "addedAt": "2026-02-14T09:03:28.213Z"
+      },
+      {
+        "id": 1771059843338,
+        "name": "Wine for cooking",
+        "expiry": "2026-02-20",
+        "quantity": 1,
+        "addedAt": "2026-02-14T09:04:03.338Z"
       }
     ],
     "pantry": []
