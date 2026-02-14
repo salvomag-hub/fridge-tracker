@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-14T15:18:26.203Z",
+  "lastUpdated": "2026-02-14T15:18:39.651Z",
   "salvo": {
     "fridge": [
       {
@@ -85,7 +85,7 @@
       {
         "id": 1771082306203,
         "name": "Polenta",
-        "expiry": "2026-02-14",
+        "expiry": "2026-06-30",
         "quantity": 1,
         "grams": 500,
         "addedAt": "2026-02-14T15:18:26.203Z"
