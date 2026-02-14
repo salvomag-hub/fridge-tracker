@@ -89,6 +89,10 @@
                             <label for="quantity">Qty</label>
                             <input type="number" id="quantity" value="1" min="1">
                         </div>
+                        <div class="form-group flex-1">
+                            <label for="grams">Grammi</label>
+                            <input type="number" id="grams" placeholder="g" min="0">
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="expiry-date">Expiry Date</label>
@@ -140,6 +144,10 @@
                     <div class="form-group">
                         <label for="edit-quantity">Quantity</label>
                         <input type="number" id="edit-quantity" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-grams">Grammi (opzionale)</label>
+                        <input type="number" id="edit-grams" placeholder="g" min="0">
                     </div>
                     <div class="modal-buttons">
                         <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>

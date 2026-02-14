@@ -391,6 +391,7 @@ function addItem(event) {
     const name = document.getElementById('product-name').value.trim();
     const expiry = document.getElementById('expiry-date').value;
     const quantity = parseInt(document.getElementById('quantity').value) || 1;
+    const grams = parseInt(document.getElementById('grams').value) || 0;
     
     if (!name || !expiry) {
         showToast('Please fill all fields!', 'error');
@@ -402,6 +403,7 @@ function addItem(event) {
         name: name,
         expiry: expiry,
         quantity: quantity,
+        grams: grams || null,
         addedAt: new Date().toISOString()
     };
     
@@ -412,6 +414,7 @@ function addItem(event) {
     
     document.getElementById('product-name').value = '';
     document.getElementById('quantity').value = '1';
+    document.getElementById('grams').value = '';
     
     showToast(`✅ ${name} added!`, 'success');
 }
@@ -425,6 +428,7 @@ function openEditModal(id) {
     document.getElementById('edit-name').value = item.name;
     document.getElementById('edit-expiry').value = item.expiry;
     document.getElementById('edit-quantity').value = item.quantity;
+    document.getElementById('edit-grams').value = item.grams || '';
     
     document.getElementById('edit-modal').classList.remove('hidden');
 }
@@ -443,6 +447,8 @@ function saveEdit(event) {
         item.name = document.getElementById('edit-name').value.trim();
         item.expiry = document.getElementById('edit-expiry').value;
         item.quantity = parseInt(document.getElementById('edit-quantity').value) || 1;
+        const editGrams = parseInt(document.getElementById('edit-grams').value) || 0;
+        item.grams = editGrams || null;
         
         saveData();
         renderItems();
@@ -505,7 +511,8 @@ function exportSelected() {
     items.forEach(item => {
         const daysLeft = getDaysLeft(item.expiry);
         let status = daysLeft < 0 ? ' ⚠️ EXPIRED' : daysLeft <= 2 ? ' ⚠️ expiring soon' : '';
-        text += `• ${item.name} (x${item.quantity})${status}\n`;
+        const gramsStr = item.grams ? `, ${item.grams}g` : '';
+        text += `• ${item.name} (x${item.quantity}${gramsStr})${status}\n`;
     });
     text += `\nWhat can I cook?`;
     
@@ -573,7 +580,7 @@ function renderItems() {
                     <div class="item-name">${escapeHtml(item.name)}</div>
                     <div class="item-expiry ${statusClass}">${expiryText}</div>
                 </div>
-                <span class="item-quantity">x${item.quantity}</span>
+                <span class="item-quantity">x${item.quantity}${item.grams ? ` (${item.grams}g)` : ''}</span>
                 <div class="item-actions">
                     <button class="item-edit" onclick="openEditModal(${item.id}); event.stopPropagation();">✏️</button>
                     <button class="item-delete" onclick="deleteItem(${item.id}, event)">🗑️</button>
