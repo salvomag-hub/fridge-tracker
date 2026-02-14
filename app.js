@@ -584,8 +584,10 @@ function renderItems() {
 
 function getDaysLeft(expiryDate) {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return Math.ceil((new Date(expiryDate) - today) / (1000 * 60 * 60 * 24));
+    const todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    const todayMs = new Date(todayStr + 'T00:00:00').getTime();
+    const expiryMs = new Date(expiryDate + 'T00:00:00').getTime();
+    return Math.round((expiryMs - todayMs) / (1000 * 60 * 60 * 24));
 }
 
 function updateStats() {
