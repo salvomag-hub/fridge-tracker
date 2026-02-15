@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-15T19:13:01.956Z",
+  "lastUpdated": "2026-02-15T19:13:40.644Z",
   "salvo": {
     "fridge": [
       {
@@ -154,6 +154,14 @@
         "quantity": 1,
         "grams": null,
         "addedAt": "2026-02-15T19:13:01.955Z"
+      },
+      {
+        "id": 1771182820644,
+        "name": "Parmigiano",
+        "expiry": "2026-04-17",
+        "quantity": 100,
+        "grams": null,
+        "addedAt": "2026-02-15T19:13:40.644Z"
       }
     ],
     "pantry": []
