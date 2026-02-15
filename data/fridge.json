@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-15T19:13:40.644Z",
+  "lastUpdated": "2026-02-15T19:15:36.972Z",
   "salvo": {
     "fridge": [
       {
@@ -162,6 +162,14 @@
         "quantity": 100,
         "grams": null,
         "addedAt": "2026-02-15T19:13:40.644Z"
+      },
+      {
+        "id": 1771182936971,
+        "name": "Uova",
+        "expiry": "2026-03-01",
+        "quantity": 1,
+        "grams": null,
+        "addedAt": "2026-02-15T19:15:36.971Z"
       }
     ],
     "pantry": []
