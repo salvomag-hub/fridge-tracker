@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-15T19:12:39.574Z",
+  "lastUpdated": "2026-02-15T19:13:01.956Z",
   "salvo": {
     "fridge": [
       {
@@ -146,6 +146,14 @@
         "quantity": 1,
         "grams": null,
         "addedAt": "2026-02-15T19:12:39.573Z"
+      },
+      {
+        "id": 1771182781955,
+        "name": "Hummus",
+        "expiry": "2026-04-19",
+        "quantity": 1,
+        "grams": null,
+        "addedAt": "2026-02-15T19:13:01.955Z"
       }
     ],
     "pantry": []
