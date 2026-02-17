@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-17T16:57:12.055Z",
+  "lastUpdated": "2026-02-17T16:57:16.011Z",
   "salvo": {
     "fridge": [
       {
@@ -110,13 +110,6 @@
   },
   "elisa": {
     "fridge": [
-      {
-        "id": 1771059808213,
-        "name": "Peas 🫛",
-        "expiry": "2026-02-17",
-        "quantity": 1,
-        "addedAt": "2026-02-14T09:03:28.213Z"
-      },
       {
         "id": 1771059843338,
         "name": "Wine for cooking",
