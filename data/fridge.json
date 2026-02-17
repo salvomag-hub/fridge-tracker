@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-17T16:57:16.011Z",
+  "lastUpdated": "2026-02-17T16:57:19.239Z",
   "salvo": {
     "fridge": [
       {
@@ -110,13 +110,6 @@
   },
   "elisa": {
     "fridge": [
-      {
-        "id": 1771059843338,
-        "name": "Wine for cooking",
-        "expiry": "2026-02-20",
-        "quantity": 1,
-        "addedAt": "2026-02-14T09:04:03.338Z"
-      },
       {
         "id": 1771182700632,
         "name": "Kefir",
